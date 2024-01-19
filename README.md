@@ -1,16 +1,28 @@
 # Surveyor
 
-The RF Field Surveyor is Python (Django) web application used to present data, as stored in an InfluxDB.
+The RF Field Surveyor (aka Surveyor) is a Python (Django) web application used to present RF (Radio Frequency) performance data, as stored in an InfluxDB Time-series Database (TSDB).
 
-Version 2 of this tool provides the ability to define your InfluxSource as V2 to provide access to InfluxCloud.
+## Surveyor Component Diagram
 
-After deployment of the web application:
+What is Surveyor?
 
-* git clone https://github.com/sheeriot/surveyor.git
+* Surveyor: Docker - a Docker Container running Surveyor to provide web access to RF Peformance historical data.
+* Surveyor_Workder - a Docker Container running Surveyor that handles long running tasks.
+* Redis - a caching system for sharing jobs (tasks) and results.
+
+![Surveyor Component Diagram](README/surveyor/docs/diagrams/structurizr-1-RFFieldSurveyor.png)
+
+## Deployment
+
+**Note:** Under (continual) revision...
+
+After deployment of a suitable WebHost (typically NGINX).
+
+* git clone [https://github.com/sheeriot/surveyor.git](https://github.com/sheeriot/surveyor.git)
 * setup application `env/django.env`
 * define docker-compose `.env`
 * create softlink (`ln -s`) to docker-override for environment
-* startup with `docker-compose up1
+* startup with `docker-compose up`
 
 ## Setup DNS CNAME Records for Two SSL Certificates
 
@@ -18,17 +30,19 @@ The Django startup code will enable two host names.
 
 Create a django.env file in the `surveyor/env` folder.
 
+```bash
 > `cd surveyor/env`
 
 > `cp django-sample.env django.env`
 
 > `vi django.env`
+```
 
 Set two hostnames in the `django.env` file that the Django server will permit for system access. e.g. surveyor.name.one surveyor2.name.ns
 
 This name used should match the DNS name setup for this host.
 
-Note: The (SSL) Certbot and NGINX server is setup in the companion repository: **dashstack**.
+Note: The (SSL) Certbot and NGINX server is setup in the companion repository: **webhost**.
 
 ## Docker Compose for Service Management
 
@@ -37,10 +51,10 @@ Docker-compose is the best (single computer) method to run docker containers as 
 Docker-compose requires two setup files:
 
 * create the docker-compose `.env` file
-    * `cp compose.env-sample .env`
-    * `vi .env` # << set the COMPOSE_PROJECT_NAME and TCP_PORT
+  * `cp compose.env-sample .env`
+  * `vi .env` # << set the COMPOSE_PROJECT_NAME and TCP_PORT
 * softlink the intended docker-compose override file:
-    * `ln -s docker-compose-prod.override.yml docker-compose.override.yml`
+  * `ln -s docker-compose-prod.override.yml docker-compose.override.yml`
 
 Your server should now be ready to start.
 
@@ -58,11 +72,6 @@ Take approprite precautions to protect your website from internet abuse. Keep pa
 
 Access the web page and the admin console (/admin).
 
-The Admin URL is not linked, just type it after the site URL. i.e.
+The Admin URL:
 
-* https://mysurveyor.domain.name/admin
-
-Setup the Influx Sources as needed.
-
-* V2 sites use DB name (for V1 Queries), Token, and Org
-* V1 sources need DB name, username and password
+* `https://mysurveyor.domain.name/admin`
