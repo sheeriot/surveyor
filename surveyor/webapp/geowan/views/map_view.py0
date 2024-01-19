@@ -1,0 +1,501 @@
+from operator import length_hint
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.views.decorators.csrf import csrf_exempt
+
+from datetime import datetime, date, timedelta
+from time import mktime
+
+
+import pandas as pd
+import numpy as np
+import folium
+import json
+
+import pytz
+from surveyor.settings import TIME_ZONE
+from django.utils import timezone
+
+from surveyor.utils import getInfluxGpsData, init_datetime
+
+from device.models import EndNode
+from accounts.models import Person
+
+from ..forms import MapGpsDeviceForm
+
+import surveyor.tower as tower
+from .rssi_scale_helper import rssi_scale, rssi_color_lookup
+from ..utils import geoDistance
+
+
+@login_required
+def map_view(request, **kwargs):
+    console_messages = []
+    # get the Person to scope endnodes and orgs
+    username=request.user
+    person=Person.objects.get(username=username)
+    orgs_list = person.orgs_list()
+
+    if timezone.get_current_timezone():
+        tz = str(timezone.get_current_timezone())
+    else:
+        tz = TIMEZONE
+
+    console_messages.append(F'Local Timezone: {tz}')
+
+    # create form with inital values
+    yesterday_morning, now = init_datetime(tz)
+
+    form = MapGpsDeviceForm(
+        initial={"start": yesterday_morning, "end": now},
+        orgs_list=orgs_list
+    )
+
+    if request.method == "GET" and "submit" in request.GET:
+
+        form = MapGpsDeviceForm(request.GET, orgs_list=orgs_list)
+
+        if form.is_valid():
+            start = form.cleaned_data["start"]
+            end = form.cleaned_data["end"]
+            endnode_id = form.cleaned_data["endnode"].id
+            selectNode = EndNode.objects.get(pk=endnode_id)
+            context = {
+                "selectNode": selectNode,
+                "start": start,
+                "end": end,
+                "start_formatted": start.strftime("%Y%m%dT%H%M%S%z"),
+                "end_formatted": end.strftime("%Y%m%dT%H%M%S%z"),
+                "form": form,
+            }
+        else:
+            return HttpResponse("form invalid", form.errors)
+
+    elif kwargs:
+
+        # set variables from kwargs
+        console_messages.append("kwargs is True")
+
+        start_formatted = kwargs["start"]
+        start = datetime.strptime(start_formatted, "%Y%m%dT%H%M%S%z")
+        start_form = start.strftime("%Y-%m-%dT%H:%M")
+
+        end_formatted = kwargs["end"]
+        end = datetime.strptime(end_formatted, "%Y%m%dT%H%M%S%z")
+        end_form = end.strftime("%Y-%m-%dT%H:%M")
+        endnode_id = kwargs["endnode"]
+
+        form = MapGpsDeviceForm(
+            {"endnode": endnode_id, "start": start_form, "end": end_form},
+            orgs_list=orgs_list,
+        )
+
+        selectNode = EndNode.objects.get(pk=endnode_id)
+
+    elif request.method == "GET":
+        yesterday_morning, now = init_datetime(tz)
+        form = MapGpsDeviceForm(
+            initial={"start": yesterday_morning, "end": now},
+            orgs_list = orgs_list
+
+        )
+
+        context = {
+            "form": form,
+            "console_messages": console_messages,
+            "results_display": False,
+        }
+        return render(request, "geowan/map2.html", context)
+
+    context = {
+        "start": start,
+        "end": end,
+        "start_formatted": start.strftime("%Y%m%dT%H%M%S%z"),
+        "end_formatted": end.strftime("%Y%m%dT%H%M%S%z"),
+        "graph": None,
+        "form": form,
+        "selectNode": selectNode
+    }
+
+    # retrieve data from InfluxDB for said node and time
+    raw_data = getInfluxGpsData(selectNode, start, end)
+
+    gateway_obj = {}
+
+    if not raw_data.empty:
+        context["results_display"] = True
+        utc = pytz.timezone('UTC')
+
+        rcv_epochs = raw_data['rcv_time'].array
+        times = []
+        for rcv_epoch in rcv_epochs:
+            #print("RCV Time:", rcv_epoch)
+            times.append(datetime.fromtimestamp(rcv_epoch,utc))
+
+        dev_eui = raw_data["dev_eui"].array
+        gw = raw_data["gateway_eui"].array
+
+        f_count = raw_data["f_count"].array
+
+        rssi = raw_data["rssi"].array
+
+        bandwidth = raw_data["bandwidth"].array
+        bandwidth = [int(b / 1000) for b in bandwidth]
+
+        frequency = raw_data["frequency"].array
+        spreading_factor = raw_data["spreading_factor"].array
+
+        gps_valid = raw_data["gps_valid"].array
+        gps_status = raw_data["gps_status"].array
+
+        latitude = raw_data["latitude"].array.astype(float)
+        # latitude = [round(l, 5) for l in latitude]
+
+        longitude = raw_data["longitude"].array.astype(float)
+        # longitude = [round(l, 5) for l in longitude]
+
+        locations = raw_data[["latitude", "longitude"]]
+        locationlist = locations.values.tolist()
+        distance_away = [
+            geoDistance(lat1, long1, lat2, long2)
+            for lat1, long1, lat2, long2 in zip(
+                latitude,
+                longitude,
+                raw_data["gw_latitude"].array,
+                raw_data["gw_longitude"].array,
+            )
+        ]
+
+        snr = raw_data["snr"].array.astype(float)
+        snr = [round(s, 1) for s in snr]
+
+        computed_rssi = [
+            round(r + (s <= -5) * s + ((s > -5) & (s < 10)) * (s / 3 - 10 / 3))
+            for r, s in zip(rssi, snr)
+        ]
+
+        #convert the times to an array of unix times
+        # time_received = [mktime(val.timetuple()) for val in raw_data['rcv_time']]
+        time_received = raw_data['rcv_time']
+        #go through the times and calculate the steps between each f_count value
+        #array to hold time values
+        time_gap = [None] * len(time_received)
+
+        #inital times and f_count values
+        time_runner, f_count_runner = time_received[0], f_count[0]
+
+        #go through and find the time gaps
+        for i,t,f in zip(range(len(time_received)),time_received,f_count):
+
+            #only happens at start
+            if f == f_count[-1]:
+                time_gap[i] = 'NA'
+            else:
+
+                #update runners
+                count = 1
+                while f == f_count_runner:
+                    f_count_runner = f_count[i+count]
+                    time_runner = time_received[i+count]
+                    count += 1
+
+                #add the time differance to the array
+                time_gap[i] = str(timedelta(seconds=t-time_runner))
+
+        gateway_obj = {}
+        # unique gateways - back to the raw_data
+        for index, row in raw_data.iterrows():
+
+            gateway_eui = row["gateway_eui"]
+
+            if gateway_eui in gateway_obj.keys():
+                gateway_obj[gateway_eui]["time_array"].append(times[index])
+                gateway_obj[gateway_eui]["status"].append(
+                    dict(
+                        time=times[index],
+                        f_count=row["f_count"],
+                        rssi=row["rssi"],
+                        c_rssi=computed_rssi[index],
+                        snr=snr[index],
+                        frequency=row["frequency"],
+                        sf=row["spreading_factor"],
+                        bandwidth=bandwidth[index],
+                        color=rssi_color_lookup(row["rssi"]),
+                        latitude=latitude[index],
+                        longitude=longitude[index],
+                        distance=round(distance_away[index], 2),
+                        time_gap = time_gap[index],
+                    )
+                )
+                if pd.isna(row["gw_latitude"]) and pd.isna(row["gw_longitude"]):
+                    # insert zeros as marker for no data
+                    gateway_obj[gateway_eui]["gw_coords"].append([0, 0])
+                else:
+                    # first coords are used in map
+                    gateway_obj[gateway_eui]["gw_coords"].append(
+                        [round(row["gw_latitude"], 5), round(row["gw_longitude"], 5)]
+                    )
+
+            else:
+                gateway_obj[gateway_eui] = {}
+                # print(F'SNR: {snr[index]}')
+                # print(F'Type of snr {type(snr[index])}')
+
+                gateway_obj[gateway_eui]["status"] = [
+                    dict(
+                        time=times[index],
+                        f_count=row["f_count"],
+                        rssi=row["rssi"],
+                        c_rssi=computed_rssi[index],
+                        snr=snr[index],
+                        frequency=row["frequency"],
+                        sf=row["spreading_factor"],
+                        bandwidth=row["bandwidth"],
+                        color=rssi_color_lookup(row["rssi"]),
+                        latitude=latitude[index],
+                        longitude=longitude[index],
+                        distance=round(distance_away[index], 2),
+                        time_gap = time_gap[index],
+                    )
+                ]
+                gateway_obj[gateway_eui]["time_array"] = [times[index]]
+                if pd.isna(row["gw_latitude"]) and pd.isna(row["gw_longitude"]):
+                    # insert zeros
+                    gateway_obj[gateway_eui]["gw_coords"] = [[0, 0]]
+                else:
+                    gateway_obj[gateway_eui]["gw_coords"] = [
+                        [round(row["gw_latitude"], 5), round(row["gw_longitude"], 5)]
+                    ]
+        battery_level = raw_data["battery_level"].array
+
+        lat_center = (np.amin(latitude) + np.amax(latitude)) / 2
+        long_center = (np.amin(longitude) + np.amax(longitude)) / 2
+        # print(f'Center is {lat_center},{long_center}')
+
+        figure = folium.Figure()
+        map = folium.Map(
+            location=(lat_center, long_center), zoom_start=13, tiles="OpenStreetMap"
+        )
+        map.add_to(figure)
+
+        gateway_json = {}
+        # place gateway on map
+        for gateway in gateway_obj:
+            gateway_obj[gateway]["coord"] = [0, 0]
+
+            for coord in gateway_obj[gateway]["gw_coords"]:
+                if coord == [0, 0]:
+                    # print(F'Found a Zero GPS')
+                    continue
+                if gateway_obj[gateway]["coord"] == coord:
+                    continue
+                # print(F'New Coord: {coord}')
+                gateway_obj[gateway]["coord"] = coord
+
+            # check for NaN in gateway coords
+            if gateway_obj[gateway]["coord"] == [0, 0]:
+                # dummy location, skip
+                # print(F'No GPS GW: {gateway}')
+                console_messages.append(f"No GPS Location GW: {gateway}")
+            else:
+                # using last seen location of GW
+                location = gateway_obj[gateway]["coord"]
+                folium.Marker(
+                    location=location,
+                    icon=folium.DivIcon(f"""{tower.svg}"""),
+                    popup=f"GW:{gateway}\n \
+                            GPS:{location[0]},{location[1]}",
+                ).add_to(map)
+
+            # deliver json to frontend
+            gateway_json[gateway] = gateway_obj[gateway]["status"]
+
+        signal_colors = []  # an array of the hex colors
+        for rx in rssi:
+            signal_colors.append(rssi_color_lookup(rx))
+
+        for point in range(0, len(locationlist)):
+            if gps_valid[point]:
+                folium.CircleMarker(
+                    locationlist[point],
+                    radius=10,
+                    popup=f" \
+                        D:{dev_eui[point]}\n \
+                        G:{gw[point]}\n \
+                        RSSI:{rssi[point]}, SNR:{snr[point]}\n \
+                        Freq:{frequency[point]}, SF:{spreading_factor[point]}\n \
+                        GPS:{latitude[point]},{longitude[point]}\n \
+                        {(pd.to_datetime(times[point]).tz_convert(tz=tz)).strftime('%m-%d %H:%M:%S %Z')}",
+                    color=signal_colors[point],
+                    fill=True,
+                    fill_color=signal_colors[point],
+                    fill_opacity=0.6,
+                ).add_to(map)
+
+        for gateway, status in gateway_json.items():
+            for record in status:
+                record["time"] = (
+                    record["time"].timestamp() * 1000
+                )  # timestamp in milliseconds
+
+        # Add to Context variables
+        context["gateways"] = gateway_obj
+        #print(F'G-JSON: {gateway_json}')
+        context["gateway_json"] = json.dumps(gateway_json)
+        request.session["raw_data"] = raw_data.to_json()
+        context["m"] = map._repr_html_()
+
+        # Create Summary Data
+        context["first_frame_time"] = times[-1]
+        context["last_frame_time"] = times[0]
+        context["frame_count"] = len(times)
+        context["battery_last"] = battery_level[0]
+        context["scale"] = rssi_scale
+
+        data_logs = zip(
+            times,
+            dev_eui,
+            gw,
+            f_count,
+            rssi,
+            signal_colors,
+            snr,
+            bandwidth,
+            frequency,
+            spreading_factor,
+            gps_valid,
+            gps_status,
+            latitude,
+            longitude,
+            computed_rssi,
+            distance_away,
+            time_gap,
+        )
+
+        context["data_logs"] = data_logs
+
+        # return with data - include Map
+        # add console_messages
+        context["console_messages"] = console_messages
+        return render(request, "geowan/map2.html", context)
+
+    else:
+        context["console_messages"] = console_messages
+        console_messages.append(f"{selectNode}")
+    return render(request, "geowan/map2.html", context)
+
+
+@csrf_exempt
+def update_map_gw_filter(request):
+    if timezone.get_current_timezone():
+        tz = str(timezone.get_current_timezone())
+    else:
+        tz = TIMEZONE
+
+    utc = pytz.timezone('UTC')
+    raw_data = pd.read_json(request.session.get("raw_data"))
+    # print(F'Raw Data: {raw_data}')
+    gateways_selected = json.loads(request.body)
+    gateways_list = np.array(list(gateways_selected.keys()))
+    gateways_coords = np.array(list(gateways_selected.values()))
+    # print(f"Gateways List: {gateways_list}")
+    if gateways_list.size == 0:
+        # print(f"No Gateways")
+        return render(request, "geowan/folium-map.html", context)
+    # print(F'Gateways Coords: {gateways_coords}')
+
+    # reduce dataset based on gateway_eui selected
+
+    raw_data = raw_data.loc[raw_data["gateway_eui"].isin(gateways_list)]
+    # print(F"Raw Data: {raw_data}")
+
+    times = raw_data["time"].array
+    times = [datetime.fromtimestamp(t/1000,utc) for t in times]
+
+    dev_eui = raw_data["dev_eui"].array
+    gw = raw_data["gateway_eui"].array
+    rssi = raw_data["rssi"].array
+    # c_rssi = raw_data["computed_rssi"].array
+
+    snr = raw_data["snr"].array
+    snr = [round(s, 1) for s in snr]
+
+    bandwidth = raw_data["bandwidth"].array
+    bandwidth = [int(b / 1000) for b in bandwidth]
+
+    frequency = raw_data["frequency"].array
+    spreading_factor = raw_data["spreading_factor"].array
+
+    gps_valid = raw_data["gps_valid"].array
+    gps_status = raw_data["gps_status"].array
+
+    latitude = raw_data["latitude"].array
+    longitude = raw_data["longitude"].array
+
+    locations = raw_data[["latitude", "longitude"]]
+    locationlist = locations.values.tolist()
+
+    lat_center = (np.amin(latitude) + np.amax(latitude)) / 2
+    long_center = (np.amin(longitude) + np.amax(longitude)) / 2
+    # print(f'Center is {lat_center},{long_center}')
+
+    # # center map based on the gateways selected on front end
+    # for key, coords in gateways_selected.items():
+    #     lat_center.append(coords[0])
+    #     long_center.append(coords[1])
+
+    # if gateways_selected:
+    #     long_center = (np.amin(long_center) + np.amax(long_center))/2
+    #     lat_center = (np.amin(lat_center) + np.amax(lat_center))/2
+    # else:
+    #     long_center = -97.7444
+    #     lat_center = 30.2729
+
+    # redraw map
+    figure = folium.Figure()
+
+    # center map
+    map = folium.Map(
+        location=(lat_center, long_center), zoom_start=12, tiles="OpenStreetMap"
+    )
+
+    # mark gateways on map
+
+    for key, coords in gateways_selected.items():
+        location = [coords[0], coords[1]]
+        folium.Marker(
+            location=location,
+            icon=folium.DivIcon(f"""{tower.svg}"""),
+            popup=f"GW:{key}\n \
+                        GPS:{coords[0]},{coords[1]}",
+        ).add_to(map)
+
+    signal_colors = []  # an array of the hex colors
+    for rx in rssi:
+        signal_colors.append(rssi_color_lookup(rx))
+
+    # mark devices on map
+    for point in range(0, len(locationlist)):
+        if gps_valid[point]:
+            folium.CircleMarker(
+                locationlist[point],
+                radius=10,
+                popup=f" \
+                    D:{dev_eui[point]}\n \
+                    G:{gw[point]}\n \
+                    RSSI:{rssi[point]}, SNR:{snr[point]}\n \
+                    Freq:{frequency[point]}, SF:{spreading_factor[point]}\n \
+                    GPS:{latitude[point]},{longitude[point]}\n \
+                    {(pd.to_datetime(times[point]).tz_convert(tz=tz)).strftime('%m-%d %H:%M:%S %Z')}",
+                color=signal_colors[point],
+                fill=True,
+                fill_color=signal_colors[point],
+                fill_opacity=0.6,
+            ).add_to(map)
+
+    map.add_to(figure)
+
+    context = {}
+    context["m"] = map._repr_html_()
+    return render(request, "geowan/folium-map.html", context)

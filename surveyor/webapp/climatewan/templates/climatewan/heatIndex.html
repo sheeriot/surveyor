@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load mathfilters %}
+
+{% load dataframe_template_tags %}
+
+{% block content %}
+
+<div>
+  <img src="{% static 'Thermometer02.jpg' %}" class="d-inline" alt="Pack Track" height="75" width="60">
+  <h2 class="d-inline content-heading">ClimateWAN > HeatIndex</h2>
+</div>
+<div>
+  {% crispy form form.helper %}
+</div>
+
+<hr />
+<div id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+    <p class="mb-0 text-black-75">Messages:
+    {{ console_messages }}</p>
+  </div>
+
+{% block error_message %}
+{% if error_message %}
+<hr>
+<h3>Error:</h3>
+<div class="alert alert-danger">{{ error_message }}</div>
+{% endif %}
+{% endblock %}
+
+{% if endnode %}
+  <div class="d-inline">
+    &nbsp;&nbsp;
+    <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'packgraph_withtimes' endnode_id=endnode_id start_mark=start_mark end_mark=end_mark %}">
+    <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}" />
+    </a>
+    {% if endnode.gps_payload %}
+    <a class="me-1 popup" id="3" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'geoview_withtimes' endnode_id=endnode_id start_mark=start_mark end_mark=end_mark %}">
+    <span class="popuptext" id="myPopup3">GPS Map</span><img src="{% static 'Compass02x25.png'%}"/>
+    </a>
+    {% endif %}
+    &lt; - jump to other view(s)
+  </div>
+  <hr>
+{% endif %}
+{% if results_display %}
+<div>
+  Requested Report:
+  <a href="{% url 'heat_withtimes' endnode_id=endnode_id start_mark=start_mark end_mark=end_mark %}">
+      {% url 'heat_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
+  </a>
+  <ul class="list-group list-group-horizontal-sm">
+    <li class="list-group-item"><strong>EndNode:</strong><br>{{ endnode }}</li>
+    <li class="list-group-item"><strong>Source:</strong><br>{{ source.name }}</li>
+    <li class="list-group-item"><strong>Measurement:</strong><br>{{ meas }}</li>
+    <li class="list-group-item"><strong>DevEUI:</strong><br><a href="https://ns.us.everynet.io/devices/{{ dev_eui }}" target="_blank">{{ dev_eui }}</a> (LNS)</li>
+    <li class="list-group-item"><strong>Start:</strong><br>{{ start|date:"Y-m-d H:i (e)" }}</li>
+    <li class="list-group-item"><strong>End:</strong><br>{{ end|date:"Y-m-d H:i (e)" }}</li>
+  </ul>
+  <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices Report</a>
+</div>
+
+<hr>
+<h3>Results: Climate Data</h3>
+<h4>Device: {{ endnode.name }}({{ endnode.dev_eui }}) </h4>
+<ul class="list-group list-group-horizontal-sm">
+    <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
+    <li class="list-group-item"><a href="#climate-plot">Climate Plot</a></li>
+    <li class="list-group-item"><a href="#climate-data">Climate Table</a></li>
+</ul>
+<hr>
+<h4 id="summary-table">Summary Table</h4>
+<table class="table table-bordered table-light w-auto text-sm-start">
+  <tr>
+      <th scope="col">First Frame</th>
+      <th scope="col">Climate Frames Count</th>
+  </tr>
+  <tr>
+      <td scope="row">{{frames_first|date:"Y-m-d H:i (e)"}}</td>
+      <td>{{frames_received}}</td>
+  </tr>
+  <tr>
+      <th scope="row">Last Frame</th>
+      <th>Last Battery</th>
+  </tr>
+  <tr>
+      <td scope="row">{{frames_last|date:"Y-m-d H:i (e)"}}</td>
+      <td>{{ battery_last }}</td>
+  </tr>
+</table>
+
+<hr>
+<a href="#top">goto Top</a>
+<h3 id="climate-plot">Climate Plot</h3>
+  {% if graph %}
+  <div id="plot">
+    <img src="data:image/png;base64, {{graph|safe}}">
+  </div>
+  {% else %}
+    <p>No Climate Plot</p>
+  {% endif %}
+
+<hr>
+{% if not frames_df.empty %}
+Goto: <a href="#top">Top</a>
+<h4 id="climate-data">Climate Data: {{ dev_eui }}</h4>
+<table id="climate-table" class="table table-bordered dt-responsive nowrap w-auto text-sm-start">
+    <thead>
+      {{ frames_df|convert_data_frame_to_html_table_headers|safe }}
+    </thead>
+    <tbody>
+      {{ frames_df|convert_data_frame_to_html_table_rows|safe }}
+    </tbody>
+</table>
+
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

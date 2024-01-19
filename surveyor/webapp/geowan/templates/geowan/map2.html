@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+{% load static %}
+
+{% block headadd %}
+<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+{% endblock %}
+
+<div>
+  <img src="{% static 'Compass02.jpg' %}" class="d-inline" alt="Pack Track" height="100" width="80">
+  <h2 class="d-inline content-heading">GeoWAN > Map</h2>
+</div>
+<div>
+  {% crispy form form.helper %}
+</div>
+<hr />
+
+<div id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">Messages:
+    {{ console_messages }}</p>
+</div>
+<hr />
+{% if results_display %}
+<div>
+  Device: {{ selectNode.name }} ({{ selectNode.dev_eui }}) - {{ selectNode.manufacturer}} {{ selectNode.model}}
+</div>
+
+<div class="d-inline">
+  &nbsp;&nbsp;
+  <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'packGraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}" /> </a>
+
+  <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'heatIndex' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    <span class="popuptext" id="myPopup1">Climate Data</span><img src="{% static 'Thermometer03_25B.png' %}" /> </a>
+  &lt; - jump to other views
+</div>
+<hr />
+
+<script>
+  // load the json data
+  const data = JSON.parse('{{gateway_json|safe}}');
+  //console.log(JSON.stringify(data));
+
+  //covert time field to JS Date obj
+  for (k in data) {
+    data[k].forEach(packetArray => packetArray.time = new Date(packetArray.time))
+  }
+
+</script>
+
+<table class="table table-bordered table-light text-center">
+  <tr>
+    <th scope="col">First Frame</th>
+    <th scope="col">GPS Frames Count</th>
+  </tr>
+  <tr>
+    <td scope="row">{{first_frame_time}}</td>
+    <td>{{frame_count}}</td>
+  </tr>
+  <tr>
+    <th scope="row">Last Frame</th>
+    <th>Last Battery</th>
+  </tr>
+  <tr>
+    <td scope="row">{{last_frame_time}}</td>
+    <td>{{ battery_last }}%</td>
+  </tr>
+</table>
+
+<div id="wrapper">
+  {% include 'geowan/folium-map.html' %}
+</div>
+
+<hr>
+
+<h6> Gateway Summaries</h6>
+<table class="table table-sm table-bordered table-light text-center">
+
+  <tr>
+    <th>Gateway EUI</th>
+    <th>First Frame</th>
+    <th>Last Frame</th>
+    <th>Count</th>
+    <th>Location</th>
+  </tr>
+
+  {% for gateway, datadict in gateways.items %}
+  <tr>
+    <td>
+      <input type="checkbox" onclick="filterGateways()" name="gateway-checkbox" value="{{ gateway}}" checked>
+      <label for="{{gateway}}">{{gateway}}</label>
+    </td>
+    <td>
+      {% with datadict.time_array|last as last %}
+      {{ last }}
+      {% endwith %}
+    </td>
+    <td>{{ datadict.time_array.0 }}</td>
+    <td>{{ datadict.time_array|length }}</td>
+    <td>
+      {% if datadict.coord.0 == 0 and datadict.coord.1 == 0 %}
+      NA
+      {% else %}
+      {{ datadict.coord.0 }}, {{ datadict.coord.1 }}
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+
+</table>
+
+<hr>
+
+<table class="table table-bordered text-center">
+  <caption>RSSI Color Scale</caption>
+  <tr>
+    {% for signal_strength, color in scale.items %}
+    <td style="background-color:{{ color }};">{{ signal_strength}}</td>
+    {% endfor %}
+  </tr>
+</table>
+<hr>
+<h6> Device: {{ selectNode }} </h6>
+
+<div>
+  <table id="gateway-table" class="table table-bordered table-light text-center">
+    <tr>
+      <th scope="col">Time</th>
+      <th scope="col">Counter</th>
+      <th scope="col">Time Gap</th>
+      <th scope="col">Gateway</th>
+      <th scope="col">RSSI</th>
+      <th scope="col">C_RSSI</th>
+      <th scope="col">SNR</th>
+      <th scope="col">Freq</th>
+      <th scope="col">BW</th>
+      <th scope="col">SF</th>
+      <th scope="col">Latitude</th>
+      <th scope="col">Longitude</th>
+      <th scope="col">Dist</th>
+    </tr>
+    {% for time, dev_eui, gw, f_count, rssi, signal_color, snr, bandwidth, frequency, spreading_factor, gps_valid, gps_status, latitude, longitude, computed_rssi, distance_away, time_gap in data_logs %}
+    <tr>
+      <td>{{ time|date:"Y-M-d H:i:s" }}</td>
+      <td>{{ f_count }}</td>
+      <td>{{ time_gap }}</td>
+      <td>{{ gw }}</td>
+      <td style="background-color:{{ signal_color }};">{{ rssi }}</td>
+      <td>{{ computed_rssi }}</td>
+      <td>{{ snr|stringformat:"+d.1" }}</td>
+      <td>{{ frequency }}</td>
+      <td>{{ bandwidth }}</td>
+      <td>{{ spreading_factor }}</td>
+      <td>{{ latitude|stringformat:".5f" }}</td>
+      <td>{{ longitude|stringformat:".5f" }}</td>
+      <td>{{ distance_away|stringformat:".3f" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+<!-- Handlebar Template for Table after Gateway Filter -->
+{% verbatim %}
+<script id="handlebars-demo" type="text/x-handlebars-template">
+	<div style="background-color:salmon;" id="content">
+      {{#each this}}
+      <table>
+        <td><b>Gateway: {{@key}}</b></td>
+        <tr>
+          <th scope="col">Time</th>
+          <th scope="col">Counter</th>
+          <th scope="col">RSSI</th>
+          <th scope="col">C_RSSI</th>
+          <th scope="col">SNR</th>
+          <th scope="col">Freq</th>
+          <th scope="col">BW</th>
+          <th scope="col">SF</th>
+          <th scope="col">Lat</th>
+          <th scope="col">Long</th>
+          <th scope="col">Dist</th>
+        </tr>
+        {{#each this}}
+          <tr>
+            <td>{{this.time}}</td>
+            <td>{{this.f_count}}</td>
+            <td style="background-color: {{this.color}}">{{this.rssi}}</td>
+            <td>{{ this.c_rssi }}</td>
+            <td>{{this.snr}}</td>
+            <td>{{this.frequency}}</td>
+            <td>{{this.bandwidth}}</td>
+            <td>{{this.sf}}</td>
+            <td>{{this.latitude}}</td>
+            <td>{{this.longitude}}</td>
+            <td>{{this.distance}}</td>
+          </tr>
+        {{/each}}
+      {{/each}}
+        </table>
+        <br>
+	</div>
+</script>
+{% endverbatim %}
+
+<script>
+
+  //from django template to JS object - gateway:gateway coords
+  var gw_coords = {}
+  {% for key, value in gateways.items %}
+  gw_coords["{{key}}"] = {{ value.gw_coords.0 }}
+  {% endfor %}
+
+  //handle checkbox click
+  const filterGateways = () => {
+    selectedGateways = [];
+    var checkedBoxes = document.querySelectorAll('input[name="gateway-checkbox"]:checked');
+    checkedBoxes.forEach(checkbox => {
+      selectedGateways.push(checkbox.value);
+    });
+
+    // populate the context only with checked gateways
+    const context = Object.keys(data).
+      filter((key) => selectedGateways.includes(key)).
+      reduce((cur, key) => { return Object.assign(cur, { [key]: data[key] }) }, {});
+
+    html = templateScript(context);
+    $('#gateway-table').html(html);
+
+    const gatewayCoords = {}
+    selectedGateways.forEach(gateway => gatewayCoords[gateway] = gw_coords[gateway])
+
+    //send checkbox selected gateways to django view
+    $.ajax({
+      type: 'POST',
+      url: "{% url 'folium-map-update' %}",
+      datatype: 'json',
+      data: JSON.stringify(gatewayCoords),
+      success: function (response) {
+        $("#wrapper").html(response);
+      }
+    })
+
+  };  //end click handler
+
+  var template = $('#handlebars-demo').html();
+
+  //Compile the template data into a function
+  var templateScript = Handlebars.compile(template);
+</script>
+
+</div>
+
+
+<p>
+<ul><b><u>Data Rates and Spreading Factors</u></b>
+  <li>DR0 = SF10 @ 125 kHz ~ 1.0 kbps - max payload 11 bytes (US)</li>
+  <li>DR1 = SF9 @ 125 kHz ~ 1.7 kbps - max paylod 53 bytes (US)</li>
+  <li>DR2 = SF8 @ 125 kHz ~ 3.1 kbps - max payload 125 bytes (US)</li>
+  <li>DR3 = SF7 @ 125 kHz ~ 5.5 kbps - max payload 242 bytes (US)</li>
+  <li>DR4 = SF8 @ 500 kHz ~ 12.5 kbps - max payload 242 bytes</li>
+</ul>
+</p>
+
+</div>
+
+{% else %}
+  <p>No Results to Display!</p>
+  {% if selectNode and start_formatted and end_formatted %}
+    <div>
+      Device: {{ selectNode.name }} ({{ selectNode.dev_eui }}) - {{ selectNode.manufacturer}} {{ selectNode.model}}
+    </div>
+    <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'packGraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}" /></a>
+
+    <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+    href=" {% url 'heatIndex' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    <span class="popuptext" id="myPopup1">Climate Data</span><img src="{% static 'Thermometer03_25B.png' %}" /></a>
+    &lt; - jump to other views
+    <div class="d-inline">
+      &nbsp;&nbsp;
+    </div>
+    <hr />
+  {% endif %}
+{% endif %}
+
+{% endblock %}

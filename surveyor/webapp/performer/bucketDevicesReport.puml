@@ -1,0 +1,60 @@
+@startuml bucketDevicesReport
+
+actor Client #Black
+participant Surveyor #Violet
+database Redis #LightCyan
+database Database #LightSkyBlue
+participant Worker #PaleVioletRed
+database InfluxDB #LightCoral
+
+
+Client -> Surveyor: get_bucketDevicesReport
+Surveyor -> Database: check_auth
+Database-> Surveyor: auth=True
+Surveyor -> Redis: task_bucketDevicesReport(task-id)
+Surveyor -> Client: report_template.html, task-id
+Redis <- Worker: work_request
+Redis -> Worker: task_bucketDevicesReport
+Worker -> InfluxDB: get_BucketData
+Client -> Surveyor: ajax-taskInfo(task-id)
+Surveyor -> Database: get task-id
+Surveyor <- Database: status: in progress
+Client <- Surveyor: status: in progress
+InfluxDB -> Worker: bucketData
+Worker -> Worker: generate bucketReport
+Worker -> Redis: cache_bucketSummary
+Worker -> Redis: cache_bucketDeviceUplinks
+Worker -> Redis: cache_bucketDeviceGateway
+Worker -> Database: save_reportSummary(task-id)
+Client -> Surveyor: ajax-taskInfo(task-id)
+Surveyor -> Database: get task-id
+Surveyor <- Database: status: success
+Client <- Surveyor: status: success
+Client -> Surveyor: ajax_getSummary(task-id)
+Surveyor -> Redis: get_bucketSummary
+Surveyor <- Redis: bucketSummary
+Surveyor -> Client: bucketSummary.html
+Client -> Surveyor: ajax_getMap(task-id)
+Surveyor -> Redis: get_deviceUplinks(task-id)
+Surveyor <- Redis: deviceUplinks
+Surveyor -> Redis: get_deviceGateways(task-id)
+Surveyor <- Redis: deviceGateways
+Surveyor -> Surveyor: build map_one
+Surveyor -> Redis: cache_gatewayData
+Surveyor -> Client: map_one.html
+Client -> Surveyor: ajax_getDetails(task-id)
+Surveyor -> Redis: get_deviceUplinks(task-id)
+Surveyor <- Redis: deviceUplinks
+Surveyor -> Redis: get_deviceGateways(task-id)
+Surveyor <- Redis: deviceGateways
+Surveyor -> Surveyor: build bucketDetails
+Surveyor -> Client: bucketDetails.html
+Client -> Surveyor: ajax_gatewaymap(task-id,gateway)
+Surveyor -> Redis: get_gatewayData
+Surveyor <- Redis: gatewayData
+Surveyor -> Surveyor: build gateway_map
+Client <- Surveyor: gateway_map.html
+
+@enduml
+
+' Surveyor_Worker - Surveyor_Worker: generate bucketDevicesReport

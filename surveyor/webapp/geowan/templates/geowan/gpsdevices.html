@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+{% load static %}
+<div>
+  <img src="{% static 'Satellite02.jpg' %}" class="d-inline" alt="" height="100" width="80">
+  <h2 class="d-inline content-heading">GeoWan > GPS Devices</h2>
+</div>
+<div>
+  {% crispy form form.helper %}
+</div>
+
+<hr />
+
+<h6>Console Messages:</h6>
+<div id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">
+    {{ console_messages }}
+  </p>
+</div>
+
+{% if results_display %}
+
+<hr>
+
+<h6>Device Summaries</h6>
+<table class="table table-sm table-bordered table-light text-center">
+  <tr>
+      <th>Name</th>
+      <th>DevEUI</th>
+      <th>First Frame</th>
+      <th>Last Frame</th>
+      <th>GPS Frames Count</th>
+      <th>Last Battery</th>
+      <th>Links</th>
+  </tr>
+
+{% for deveui,data in gpsdata.items %}
+  <tr>
+      <td>{{ data.name }}</td>
+      <td>{{ deveui }} </td>
+      <td>{{ data.first_frame_time }}</td>
+      <td>{{ data.last_frame_time }}</td>
+      <td>{{ data.frame_count }}</td>
+      <td>{{ data.battery_last }}</td>
+
+      <td >
+        <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+           href=" {% url 'packGraph' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}"/> </a>
+        <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+          href=" {% url 'heatIndex' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup1">Climate Data</span><img src="{% static 'Thermometer03_25B.png' %}"/> </a>
+        <a class="me-1 popup" id="3" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+        href=" {% url 'map' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup3">GPS Map</span><img src="{% static 'Compass02x25.png' %}"/> </a>
+      </td>
+
+    </tr>
+
+{% endfor %}
+
+</table>
+<hr />
+<h2>GeoWan Map</h2>
+<div class="text-center">
+    {% if m %}
+        {{ m|safe }}
+    {% endif %}
+</div>
+<hr />
+<table class="table table-bordered text-center">
+  <caption>RSSI Color Scale</caption>
+  <tr>
+  {% for signal_strength, color in scale.items %}
+    <td style="background-color:{{ color }};">{{ signal_strength }}</td>
+  {% endfor %}
+  </tr>
+</table>
+
+<hr />
+<h4>Results:</h4>
+{% for deveui,data in gpsdata.items %}
+<div>
+  <h6>Frames: {{data.name}} ({{deveui}})</h6>
+  <table class="table table-bordered table-light text-center">
+      <tr>
+          <th scope="col">Time</th>
+          <th scope="col">Gateway</th>
+          <th scope="col">Counter</th>
+          <th scope="col">RSSI</th>
+          <th scope="col">SNR</th>
+          <th scope="col">Freq</th>
+          <th scope="col">BW</th>
+          <th scope="col">SF</th>
+          <th scope="col">Latitude</th>
+          <th scope="col">Longitude</th>
+        </tr>
+      {% for t,gw,fcnt,rssi,color,snr,freq,bw,sf,lat,long in data.dataset %}
+      <tr>
+          <td>{{ t|date:"Y-M-d H:i:s" }}</td>
+          <td>{{ gw }}</td>
+          <td>{{ fcnt }}</td>
+          <td style="background-color:{{ color }};">{{ rssi }}</td>
+          <td>{{ snr|stringformat:"+d.1" }}</td>
+          <td>{{ freq }}</td>
+          <td>{{ bw }}</td>
+          <td>{{ sf }}</td>
+          <td>{{ lat|stringformat:".5f" }}</td>
+          <td>{{ long|stringformat:".5f" }}</td>
+        </tr>
+
+     {% endfor %}
+  </table>
+  </div>
+  <hr />
+  {% endfor %}
+  <div>
+  <p>
+  <ul><b><u>Data Rates and Spreading Factors</u></b>
+    <li>DR0 = SF10 @ 125 kHz ~ 1.0 kbps - max payload 11 bytes (US)</li>
+    <li>DR1 = SF9 @ 125 kHz ~ 1.7 kbps - max paylod 53 bytes (US)</li>
+    <li>DR2 = SF8 @ 125 kHz ~ 3.1 kbps - max payload 125 bytes (US)</li>
+    <li>DR3 = SF7 @ 125 kHz ~ 5.5 kbps - max payload 242 bytes (US)</li>
+    <li>DR4 = SF8 @ 500 kHz ~ 12.5 kbps - max payload 242 bytes</li>
+  </ul>
+  </p>
+</div>
+{% else %}
+<div>
+  <p>No Results to Display!</p>
+  <table class="table table-bordered table-light text-center caption-top">
+    <caption>Jump Links:</caption>
+    <tr>
+      <th>Device</th>
+      <th>DevEUI</th>
+      <th>Product</th>
+      <th>Packets</th>
+      <th>Climate</th>
+      <th>GPS Map</th>
+    </tr>
+    {% for node in nodes %}
+    <tr>
+      <td>{{ node }} </td>
+      <td>{{ node.dev_eui }}</td>
+      <td>{{ node.manufacturer }} {{ node.model }}</td>
+      <td>
+        <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+          href=" {% url 'packGraph' endnode=node.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png'%}"/> </a>
+      </td>
+      <td>
+        <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+          href=" {% url 'heatIndex' endnode=node.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup1">Climate Data</span><img src="{% static 'Thermometer03_25B.png' %}"/> </a>
+      </td>
+      <td>
+          <a class="me-1 popup" id="3" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+        href=" {% url 'map' endnode=node.id start=start_formatted end=end_formatted submit='Submit' %}">
+          <span class="popuptext" id="myPopup3">GPS Map</span><img src="{% static 'Compass02x25.png '%}"/> </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

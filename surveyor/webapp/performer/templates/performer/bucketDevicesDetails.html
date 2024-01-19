@@ -1,0 +1,47 @@
+{% load dataframe_template_tags %}
+
+<hr>
+<div id="device-uplinks">
+<h3>Device Uplinks</h3>
+<ul><li><a href="#top">goto Top</a></li></ul>
+Notes:
+<ul>
+  <li>pdr is Packet Delivery Rate, aka Uplinks Success Rate</li>
+  <li>total is total number of uplinks seen from the device</li>
+  <li>received is total number of uplinks received from that device</li>
+  <li>missed is derived from gaps in the uplink counter sequence, not all missed frames can be counted</li>
+
+  <li>devices that repeat Uplink Counter due to non-Confirmed messages will skew results - see frame viewer</li>
+  <li>some uplinks are not tracked, i.e. LoRaWAN MAC control uplink messsages</li>
+  <li>joins are counted as unique device_addr</li>
+  <li>ABP devices that restart their uplnk counter during query window will produce invalid results</li>
+</ul>
+
+<table id="device-uplinks-table" class="table table-striped table-bordered .table-fixed w-auto">
+  <thead>
+    {{ device_uplinks_df | convert_data_frame_to_html_table_headers | safe}}
+   </thead>
+   <tbody>
+     {% autoescape off %}
+     {% dataframe_to_htmltablerows_withlinks2 device_uplinks_df source_id meas start_mark end_mark %}
+     {% endautoescape %}
+  </tbody>
+  </table>
+</div>
+
+<hr>
+<div id="device-gateway">
+<h3>Device/Gateway Results:</h3>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<table class="table table-striped table-bordered .table-fixed w-auto">
+  <thead>
+    {{ device_gw_df | convert_data_frame_to_html_table_headers | safe}}
+  </thead>
+  <tbody>
+    {% autoescape off %}
+    {% dataframe_to_htmltablerows_withlinks2 device_gw_df source_id meas start_mark end_mark %}
+    {% endautoescape %}
+  </tbody>
+</table>
+</div>
+<p>fini: {% now "H:i:s.u" %}</p>

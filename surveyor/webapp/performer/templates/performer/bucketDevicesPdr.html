@@ -1,0 +1,11 @@
+<hr>
+<h3>Devices - Packet Delivery Ratio</h3>
+{% if pdr_hist %}
+  <div id="pdr_hist">
+    <div class="text-center">
+      <img src="data:image/png;base64, {{ pdr_hist|safe }}">
+    </div>
+  </div>
+{% else %}
+  <p>No PDR Histogram Available</p>
+{% endif %}

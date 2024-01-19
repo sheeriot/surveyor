@@ -1,0 +1,20 @@
+# enable access to IOT Dashboard docker network
+services:
+
+  surveyor:
+    networks:
+      - dashstack_default
+    # ports:
+    #   - 8000:8000
+
+  surveyor_worker:
+    networks:
+      - dashstack_default
+
+  redis:
+    networks:
+      - dashstack_default
+
+networks:
+  dashstack_default:
+    external: true

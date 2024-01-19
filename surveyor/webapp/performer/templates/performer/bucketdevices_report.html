@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load mathfilters %}
+
+{% block content %}
+<div>
+    <img src="{% static 'BucketView1_200.png' %}" class="d-inline" alt="RF Performer" height="100" width="80">
+    <h2 class="d-inline content-heading"> RF Performer > Bucket Devices Report</h2>
+</div>
+{% if task_id %}
+
+<div id="polling">
+    <div class="spinner-border text-danger" style="width: 2rem; height: 2rem;" role="status">
+        <span class="visually-hidden">Pending</span>
+    </div>
+</div>
+
+<div id="task-status">Task Status: Requested</div>
+<div id='task-input'>
+    <table class="table table-striped table-bordered .table-fixed w-auto">
+        <caption style="caption-side:top;">Requested Report: <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">
+            {% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}
+        </a></caption>
+        <tr>
+          <th>Source</th>
+          <th>Measurement</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+        <tr>
+          <td>{{ source_name }}</td>
+          <td>{{ meas }}</td>
+          <td>{{ start|date:"Y-m-d H:i (e)" }}</td>
+          <td>{{ end|date:"Y-m-d H:i (e)" }}</td>
+      </table>
+</div>
+<hr>
+{% endif %}
+
+<div>
+    {% crispy form form.helper %}
+</div>
+<div style="clear:both" id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">Messages:
+  {{ console_messages }}</p>
+</div>
+<hr>
+{% block error_message %}
+{% if error_message %}
+<hr>
+<h3>Error:</h3>
+<div class="alert alert-danger">{{ error_message }}</div>
+{% endif %}
+{% endblock %}
+
+{% if task_id %}
+<div id="toc" style="display: none;">
+    <hr>
+    <h4>Bucket Devices - Report Contents:</h4>
+    <ul class="list-group list-group-horizontal-sm">
+        <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
+        <li class="list-group-item"><a href="#devices-pdr">Packet Delivery Ratios</a></li>
+        <li class="list-group-item"><a href="#devices-maps">Device Maps</a></li>
+        <li class="list-group-item">
+            <a href="#report-details">Report Details</a> :
+            <a href="#device-uplinks">Device Uplinks</a> :
+            <a href="#device-gateway">Device/Gateway</a>
+        </li>
+    </ul>
+</div>
+
+<div id="summary-table">
+</div>
+
+<div id="devices-pdr">
+</div>
+
+<div id="devices-maps">
+</div>
+
+<div id="report-details">
+</div>
+
+<script type="text/javascript">
+    var taskid = "{{task_id}}";
+    var frm = $('#bucketDevicesDelayForm');
+    var task_status = $('#task-status');
+    var task_polling = $('#polling');
+    var toc = $('#toc');
+    var summary_table = $('#summary-table');
+    var devices_pdr = $('#devices-pdr');
+    var devices_maps = $('#devices-maps');
+    var report_details = $('#report-details');
+
+
+
+    get_task_info(taskid);
+
+    function get_task_info(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/getTaskInfo/',
+            data: {'task_id': tid},
+            success: function (data) {
+                task_status.html('');
+                if (data.state == 'PENDING') {
+                    task_status.html('Task Status: ' + data.state);
+                }
+                else if(data.state == 'SUCCESS') {
+                    task_status.html('Task Status: Task Completed!');
+                }
+                else if(data.state == 'FAILURE') {
+                    task_status.html('Task Status: ' + data.state + '!');
+                } else {
+                    task_status.html('Task Status: ' + data.state);
+                }
+
+                if (!(data.state == 'SUCCESS' || data.state == 'FAILURE')) {
+                    setTimeout(function () {
+                        get_task_info(tid)
+                    }, 2000);
+                }
+                else {
+                    task_status.html('Task Status: ' + data.state);
+                    task_polling.html('');
+                    if(data.state == 'SUCCESS') {
+                        toc.show();
+                        summary_table.html('<hr><div class="spinner-border text-primary" role="status"></div>Summary Table...');
+                        devices_pdr.html('<hr><div class="spinner-border text-primary" role="status"></div>Graphing PDR...');
+                        devices_maps.html('<hr><div class="spinner-border text-primary" role="status"></div>Mapping Devices...');
+                        report_details.html('<hr><div class="spinner-border text-success" role="status"></div>Loading Details...');
+                        get_bucket_devices_summary(tid);
+                        get_bucket_devices_pdr(tid);
+                        get_bucket_devices_maps(tid);
+                        get_bucket_devices_details(tid);
+                    } else {
+                        summary_table.html('Task Failed!' + data.state);
+                        devices_pdr.html('No PDR');
+                        device_maps.html('No Maps');
+                        report_details.html('No Details');
+                    }
+                }
+            },
+            error: function (data) {
+                task_status.html("Something went wrong!");
+            }
+        });
+    }
+    function get_bucket_devices_summary(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/bucketDevicesSummary/',
+            data: {'task_id': tid},
+            success: function (data) {
+                summary_table.html(data);
+            },
+            error: function (data) {
+                summary_table.html('No Summary Data: ' + alert(data));
+            }
+        });
+    }
+    function get_bucket_devices_pdr(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/bucketDevicesPdr/',
+            data: {'task_id': tid},
+            success: function (data) {
+                devices_pdr.html(data);
+            },
+            error: function (data) {
+                devices_pdr.html('Graphing Error' + alert(data));
+            }
+        });
+    }
+    function get_bucket_devices_maps(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/bucketDevicesMaps/',
+            data: {'task_id': tid},
+            success: function (data) {
+                devices_maps.html(data);
+            },
+            error: function (data) {
+                devices_maps.html('Mapping Error!' + alert(data));
+            }
+        });
+    }
+    function get_bucket_devices_details(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/bucketDevicesDetails/',
+            data: {'task_id': tid},
+            success: function (data) {
+                task_polling.html('');
+                report_details.html(data);
+            },
+            error: function (data) {
+                report_details.html('Report Details - Error!' + alert(data));
+            }
+        });
+    }
+
+</script>
+{% endif %}
+{% endblock %}

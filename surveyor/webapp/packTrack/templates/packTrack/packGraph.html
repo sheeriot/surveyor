@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load mathfilters %}
+
+{% load dataframe_template_tags %}
+
+{% block content %}
+
+<div>
+    <img src="{% static 'packtrack06.png' %}" class="d-inline" alt="Pack Track" height="100" width="80">
+    <h2 class="d-inline content-heading">packTrack > packGraph</h2>
+</div>
+<div>
+    {% crispy form form.helper %}
+</div>
+
+<div style="clear:both" id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">Messages:
+  {{ console_messages }}</p>
+</div>
+
+{% block error_message %}
+{% if error_message %}
+    <hr>
+    <h3>Error:</h3>
+    <div class="alert alert-danger">{{ error_message }}</div>
+{% endif %}
+{% endblock %}
+{% if endnode %}
+<div class="d-inline">
+    &nbsp;&nbsp;
+    <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+        href=" {% url 'heat_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
+    <span class="popuptext" id="myPopup1">Climate Data</span><img src="{% static 'Thermometer02x25.png'%}"/>
+    </a>
+
+    {% if endnode.gps_payload %}
+    <a class="me-1 popup" id="3" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
+        href=" {% url 'geoview_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
+    <span class="popuptext" id="myPopup3">GPS Map</span><img src="{% static 'Compass02x25.png'%}"/>
+    </a>
+    {% endif %}
+
+    &lt; - jump to other view(s)
+</div>
+<hr>
+{% endif %}
+
+{% if results_display %}
+<div>
+    Requested Report:
+    <a href="{% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
+        {% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
+    </a>
+    <ul class="list-group list-group-horizontal-sm">
+        <li class="list-group-item">Source:<br>{{ source.name }}</li>
+        <li class="list-group-item">Measurement:<br>{{ meas }}</li>
+        <li class="list-group-item">Dev_EUI:<br><a href="https://ns.us.everynet.io/devices/{{ endnode.dev_eui }}" target="_blank">{{ dev_eui }}</a> (LNS)</li>
+        <li class="list-group-item">Start:<br>{{ start|date:"Y-m-d H:i (e)" }}</li>
+        <li class="list-group-item">End:<br>{{ end|date:"Y-m-d H:i (e)" }}</li>
+    </ul>
+    <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices Report</a>
+</div>
+<hr>
+<h3>Results: PackTrack - All Received Uplinks and Frames</h3>
+<h4>Device: {{ endnode.name }}({{ endnode.dev_eui }}) </h4>
+<ul class="list-group list-group-horizontal-sm">
+    <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
+    <li class="list-group-item"><a href="#uplinks-timeplot">Uplinks/Time Plot</a></li>
+    <li class="list-group-item"><a href="#device-uplinks">Device Uplinks Table</a></li>
+    <li class="list-group-item"><a href="#received-frames">Received Frames Table</a></li>
+</ul>
+<hr>
+<h4 id="summary-table">Summary Table</h4>
+<table class="table table-bordered table-light table-sm text-center text-sm-start w-auto">
+    <tr>
+        <th>First Frame</th>
+        <th>Frames Received</th>
+        <th>Uplinks Received</th>
+        <th>Uplinks Missed</th>
+    </tr>
+    <tr>
+        <td>{{frames_first}}</td>
+        <td>{{frames_received}}</td>
+        <td>{{uplinks_received}}</td>
+        <td>{{uplinks_missed}}</td>
+    </tr>
+    <tr>
+        <th>Last Frame</th>
+        <th>Gateways</th>
+        <th>ReJoins</th>
+        <th>Packet Delivery Ratio (PDR)</th>
+    </tr>
+    <tr>
+        <td>{{ frames_last }}</td>
+        <td>{{ gateway_count }}</td>
+        <td>{{ rejoins }}</td>
+        <td>{{ uplinks_pdr|mul:100|floatformat:1 }}%</td>
+    </tr>
+</table>
+{% if graph %}
+<hr>
+<h3 id="uplinks-timeplot">RF Uplinks - Time Plot</h3>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph|safe}}">
+</div>
+{% endif %}
+<hr>
+<h4 id="device-uplinks">Device Uplinks</h4>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<table id="device-uplinks" class="table table-bordered dt-responsive nowrap w-100">
+    <thead>
+     {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
+    </thead>
+    <tbody>
+      {{ device_uplinks_df|convert_data_frame_to_html_table_rows|safe}}
+    </tbody>
+</table>
+
+<hr>
+<h4 id="received-frames">Received Frames</h4>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<table id="received-frames" class="table table-bordered dt-responsive nowrap w-100">
+    <thead>
+     {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
+    </thead>
+    <tbody>
+      {{ frames_df | convert_data_frame_to_html_table_rows | safe}}
+    </tbody>
+</table>
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,34 @@
+@startuml surveyor
+
+frame "Azure" {
+    [Public IP] as ip #LightSteelBlue
+    node "VM" #CornSilk {
+        package "Web Server" {
+            [NGINX] as nginx
+        }
+        frame "Django Web App" as django {
+            () gunicorn
+            [Models] as models #DarkSalmon
+            [Views] as views #Chartreuse
+            [Templates] #green
+            label "RF Field Surveyor"
+        }
+        database database #red
+        frame disk {
+            folder "Static Files" as static
+        }
+        [NIC] as nic #LightSteelBlue
+    }
+}
+nginx -r-> static
+views --> models
+models -l-> database
+views--> [Templates]
+
+ip --> nic
+
+nginx -d-> () gunicorn : proxy
+gunicorn -d-> views
+
+
+@enduml

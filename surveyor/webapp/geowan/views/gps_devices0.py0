@@ -1,0 +1,291 @@
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseBadRequest
+
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import folium
+
+import pytz
+
+from django.utils import timezone
+from surveyor.settings import TIME_ZONE
+
+from surveyor.utils import getInfluxGpsData, init_datetime
+
+from device.models import EndNode
+
+from accounts.models import Person
+
+from ..forms import GpsDevicesForm
+# from ..utils import pointHeats, normRssi, makeHeatMap
+
+from .rssi_scale_helper import rssi_scale, rssi_color_lookup
+
+
+@login_required
+def gps_devices(request):
+    console_messages = []
+    # get the Person to scope endnodes and orgs
+    username = request.user
+    person = Person.objects.get(username=username)
+
+    orgs_list = person.orgs_list()
+
+    if timezone.get_current_timezone():
+        tz = str(timezone.get_current_timezone())
+    else:
+        tz = TIME_ZONE
+
+    console_messages.append(F'Local Timezone: {tz}')
+
+    yesterday_morning, now = init_datetime(tz)
+
+    form = GpsDevicesForm(
+        initial={'start': yesterday_morning, 'end': now},
+        orgs_list=orgs_list
+    )
+
+    # processes first form, for end nodes and start and end date
+    if (request.method == 'GET' and
+            'submit' in request.GET and 'gateways' not in request.GET):
+
+        form = GpsDevicesForm(
+            request.GET,
+            orgs_list=orgs_list
+        )
+
+        if form.is_valid():
+            start = form.cleaned_data["start"]
+            end = form.cleaned_data["end"]
+            endnodes = form.cleaned_data["endnodes"]
+
+            # denotes that the gateways variable wasn't used in this request
+            gateways = []
+            # if valid and clean, do not return here, go back to main routine
+        else:
+            missing_params = []
+            params_string = request.META['QUERY_STRING']
+            query_string_fields = {'start', 'end', 'endnodes', 'submit'}
+
+            for field in query_string_fields:
+                if field not in params_string:
+                    missing_params.append(field)
+            return HttpResponseBadRequest(f'Bad Request 400  Consider adding an {missing_params}')
+
+    else:
+        context = {
+        'form': form,
+        'console_messages': console_messages,
+        'results_display': False
+        }
+        return render(request, 'geowan/gpsdevices.html', context)
+
+   # To get here, we have a Good GET request; process data
+    context = {
+        "endnodes": endnodes,
+        "start_formatted": start.strftime("%Y%m%dT%H%M%S%z"),
+        "end_formatted": end.strftime("%Y%m%dT%H%M%S%z"),
+        "start": start,
+        "end": end,
+        "form": form,
+    }
+
+    console_messages.append(F'Processing nodes: {endnodes}')
+    # collect data into gpsdata
+    gpsdata = {}
+
+    # gather some info about the gateways' data
+    gateway_obj = {}
+
+    # set starting values for GPS min/max that are guaranteed to be overwritten
+    long_min = 180
+    long_max = -180
+    lat_min = 90
+    lat_max = -90
+
+    #keeps track if data was collected
+    context["results_display"] = False
+    utc = pytz.timezone('UTC')
+    nodes = []
+    # collect data from influx for each endnode
+    for id in endnodes:
+        nodes.append(EndNode.objects.get(pk=id))
+        selectNode = EndNode.objects.get(pk=id)
+        raw_data = getInfluxGpsData(selectNode, start, end)
+        # print(F'Raw Data:\n{raw_data}')
+
+        #-- might be worth adding a different influx search with gateways included
+        if not raw_data.empty:
+
+            context["results_display"] = True
+
+            dev_eui = raw_data['dev_eui'].array
+            gw = raw_data['gateway_eui'].array
+
+            # relative to gateway as a key rather than device
+            for index, row in raw_data.iterrows():
+                eui = row['gateway_eui']
+
+                if eui in gateway_obj.keys():
+                    gateway_obj[eui].append(datetime.fromtimestamp(row['rcv_time'],utc).strftime('%Y-%m-%d %X'))
+
+                else:
+                    gateway_obj[eui] = [datetime.fromtimestamp(row['rcv_time'],utc).strftime('%Y-%m-%d %X')]
+
+            rcv_epochs = raw_data['rcv_time'].array
+
+            times = []
+            for rcv_epoch in rcv_epochs:
+                #print("RCV Time:", rcv_epoch)
+                times.append(datetime.fromtimestamp(rcv_epoch,utc))
+            # print(F'Times: {times}')
+
+            f_count = raw_data['f_count'].array.astype(int)
+            rssi = raw_data['rssi'].array.astype(int)
+
+            snr = raw_data['snr'].array.astype(float)
+            snr = [round(s, 1) for s in snr]
+
+            computed_rssi = [round(r + (s <= -5) * s + ((s > -5) & (s < 10)) * (s / 3 - 10 / 3)) for r, s in zip(rssi, snr)]
+
+            bandwidth = raw_data['bandwidth'].array
+            bandwidth = [int(b/1000) for b in bandwidth]
+
+            frequency = raw_data['frequency'].array
+            spreading_factor = raw_data['spreading_factor'].array
+
+            gps_valid = raw_data['gps_valid'].array
+            gps_status = raw_data['gps_status'].array
+
+            latitude = raw_data['latitude'].array.astype(float)
+            #print(F"Latitudes:{latitude}")
+            longitude = raw_data['longitude'].array.astype(float)
+            #print(F"Longitudes:{longitude}")
+
+            locations = raw_data[['latitude','longitude']]
+            locationlist = locations.values.tolist()
+
+            battery_level = raw_data['battery_level'].array
+            battery_voltage = raw_data['battery_voltage'].array
+
+            battery_metric = "voltage"
+
+            if all(bv is None for bv in battery_voltage):
+                battery_metric = "level"
+                if all(bl is None for bl in battery_level):
+                    battery_metric = "none"
+
+            if battery_metric == "voltage":
+                # round battery voltage to 2 digits
+                battery_voltage = [round(b, 2) for b in battery_voltage]
+                battery_last = f'{battery_voltage[0]}v'
+            elif battery_metric == "level":
+                battery_last = f'{battery_level[0]}%'
+            else: battery_last = '--'
+
+            context["battery_metric"] = battery_metric
+
+            if np.amin(latitude) < lat_min: lat_min = np.amin(latitude)
+            if np.amax(latitude) > lat_max: lat_max = np.amax(latitude)
+
+            if np.amin(longitude) < long_min: long_min = np.amin(longitude)
+            if np.amax(longitude) > long_max: long_max = np.amax(longitude)
+
+            signal_colors=[]  #an array of the hex colors
+            for rx in rssi:
+                signal_colors.append(rssi_color_lookup(rx))
+
+            for point in range(0, len(locationlist)):
+
+                # save device info
+                deveui = selectNode.dev_eui
+                # gpsdata is used for map markings
+                gpsdata[deveui] = dict(
+                                        name = selectNode.name,
+                                        # summary data
+                                        first_frame_time = times[-1], last_frame_time = times[0], frame_count = len(times),
+                                        battery_last = battery_last, id = selectNode.id, \
+                                        times = times,gw = gw, f_count = f_count, rssi = rssi, signal_colors = signal_colors, \
+                                        snr = snr, bandwidth = bandwidth, frequency = frequency, \
+                                        spreading_factor = spreading_factor, latitude = latitude, longitude = longitude, locationlist = locationlist
+                                  )
+            console_messages.append(F'{selectNode.name}:{selectNode.dev_eui} ({f_count.size})')
+
+        else:
+            console_messages.append(F"{selectNode.name}:{selectNode.dev_eui} (0)")
+        # end of device loop
+
+    context['nodes'] = nodes
+    # Build the Map
+    # Define the Lat/Long center for map
+    lat_center = round((lat_min + lat_max)/2,2)
+    long_center = round((long_min + long_max)/2,2)
+
+    # Consolidated Folium Figure for all devices
+    figure=folium.Figure()
+    # Create map
+    map = folium.Map(
+        location=(lat_center, long_center),
+        zoom_start=12,
+        tiles='OpenStreetMap'
+        )
+    # add map to Figure. or figure to map?
+    map.add_to(figure)
+
+    # Loop through devices. Sadly, need to re-constitute the data
+    for deveui in gpsdata:
+        # Now loop through data adding markers.
+
+        locationlist=gpsdata[deveui]['locationlist']
+
+        # add device data to map
+        for p in range(0, len(locationlist)):
+            popuptext=f"\
+                D:{deveui}\n \
+                G:{gpsdata[deveui]['gw'][p]}\n \
+                RSSI:{gpsdata[deveui]['rssi'][p]},SNR:{gpsdata[deveui]['snr'][p]}\n \
+                Freq:{gpsdata[deveui]['frequency'][p]},SF:{gpsdata[deveui]['spreading_factor'][p]}\n \
+                GPS:{gpsdata[deveui]['latitude'][p]},{gpsdata[deveui]['longitude'][p]}\n \
+                {(pd.to_datetime(gpsdata[deveui]['times'][p]).tz_convert(tz=tz)).strftime('%m-%d %H:%M:%S %Z')}"
+
+            # Create markers
+            folium.CircleMarker(
+                locationlist[p],
+                radius=10,
+                popup=popuptext,
+                color=gpsdata[deveui]['signal_colors'][p],
+                fill=True,
+                fill_color=gpsdata[deveui]['signal_colors'][p],
+                fill_opacity=0.7
+                ).add_to(map)
+
+        # use this form for table display in view
+        # is this used?
+        gpsdata[deveui]['dataset']=zip(
+            gpsdata[deveui]['times'],
+            gpsdata[deveui]['gw'],
+            gpsdata[deveui]['f_count'],
+            gpsdata[deveui]['rssi'],
+            gpsdata[deveui]['signal_colors'],
+            gpsdata[deveui]['snr'],
+            gpsdata[deveui]['frequency'],
+            gpsdata[deveui]['bandwidth'],
+            gpsdata[deveui]['spreading_factor'],
+            gpsdata[deveui]['latitude'],
+            gpsdata[deveui]['longitude']
+            )
+    # gateways is an array of Gateway - no longer a column in the dataset (now gw)
+    context['selectNode'] = selectNode
+    context['gateways'] = gateway_obj
+
+    # Add Map, scale, data to Context variable
+    context["m"]=map._repr_html_()
+    context["scale"] = rssi_scale
+    context["gpsdata"] = gpsdata
+    # pass console_messages to view
+    context["console_messages"]=console_messages
+
+    return render(request, 'geowan/gpsdevices.html', context)

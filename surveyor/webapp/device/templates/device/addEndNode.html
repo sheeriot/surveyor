@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+{% if actionResponse in locals %}
+<div class="alert alert-danger" role="alert">
+    {{actionResponse}}
+</div>
+{% endif %}
+<br>
+<div>
+  <img src="{% static 'EndDeviceB_100.png' %}" class="d-inline" alt="Device" height="100" width="45">
+  <h2 class="d-inline content-heading">Devices > Add EndNode</h2>
+</div>
+<hr />
+<h2>
+  <img src="{% static 'Gear01_25.png' %}" class="d-inline" alt="End Device">
+  Add EndNode
+</h2>
+
+{% if messages %}
+<ul class="messages">
+  {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form action="{% url 'addEndNode' %}" method="POST">
+  <div class="form-group col-lg-5">
+    {% csrf_token %}
+    {{form|crispy}}
+    <input class="btn btn-primary" type="submit" value="Add EndNode" />
+  </div>
+</form>
+
+{% endblock %}

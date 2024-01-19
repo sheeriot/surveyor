@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load mathfilters %}
+{% load df_views %}
+
+{% block content %}
+
+<div>
+    <img src="{% static 'BucketView1_200.png' %}" class="d-inline" alt="RF Performer" height="100" width="80">
+    <h2 class="d-inline content-heading"> RF Performer > Bucket View > Gateways</h2>
+</div>
+<div>
+    {% crispy form form.helper %}
+</div>
+
+<div style="clear:both" id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">Messages:
+  {{ console_messages }}</p>
+</div>
+<hr>
+
+<div class="d-inline">
+    Source Info:
+    Name: {{ selectSource.name }}@{{ selectSource.host }} <br>
+    &nbsp; Bucket: {{ selectSource.dbname }}, Measurement: {{ meas }}
+</div>
+
+{% block error_message %}
+{% if error_message %}
+<hr>
+<h3>Error:</h3>
+<div class="alert alert-danger">{{ error_message }}</div>
+{% endif %}
+{% endblock %}
+
+{% if results_display %}
+<!--
+<hr>
+<h3>Totals</h3>
+<table class="table table-striped table-bordered w-auto">
+  <tr>
+    <th>Device Count</th>
+    <th>Records</th>
+    <th>First Frame</th>
+
+  </tr>
+  <tr>
+    <td>{{ totals_dict.device_count }}</td>
+    <td>{{ totals_dict.record_count }}</td>
+    <td>{{ totals_dict.frame_first }}</td>
+  </tr>
+  <tr>
+    <th>Rejoiners Count</th>
+    <th>Rejoin Rate</th>
+    <th>Last Frame</th>
+
+  </tr>
+  <tr>
+    <td>{{ totals_dict.rejoiners }}</td>
+    <td><strong>{{ totals_dict.rejoin_rate|mul:100|floatformat:1 }}%</strong></td>
+    <td>{{ totals_dict.frame_last }}</td>
+  </tr>
+</table>
+-->
+<hr>
+<div class="text-center">
+{% if graph %}
+  <h2>Gateway Graphs</h2>
+  <img src="data:image/png;base64, {{graph|safe}}">
+{% endif %}
+</div>
+<hr>
+<h3>Gateway Summary:</h3>
+
+<table class="table table-striped table-bordered .table-fixed w-auto">
+  <tr>
+    <th>Gateway</th>
+    <th>Frames Received</th>
+    <th>RSSI Mean</th>
+    <th>RSSI Min</th>
+    <th>RSSI Max</th>
+    <th>SNR Mean</th>
+    <th>SNR Min</th>
+    <th>SNR Max</th>
+    <th>First Frame</th>
+    <th>Last Frame</th>
+  </tr>
+  {% for index, row in device_gw_df.iterrows %}
+    <tr>
+      <td>{{ index }}</td>
+      <td>{{ row.frames_received }}</td>
+      <td>{{ row.rssi_mean|floatformat:0 }}</td>
+      <td>{{ row.rssi_min }}</td>
+      <td>{{ row.rssi_max }}</td>
+      <td>{{ row.snr_mean|floatformat:1 }}</td>
+      <td>{{ row.snr_min|floatformat:1 }}</td>
+      <td>{{ row.snr_max|floatformat:1 }}</td>
+      <td>{{ row.first|date:"Y-m-d H:i:s" }}</td>
+      <td>{{ row.last|date:"Y-m-d H:i:s" }}</td>
+    </tr>
+  {% endfor %}
+</table>
+<hr>
+<p>fini: {% now "H:i:s.u" %}
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% load i18n admin_urls static %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Upload Bucket Device{% endblock %}
+
+{{ block.super }}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:device_bucketdevice_changelist' %}">Bucket Devices List</a>
+</div>
+{% endblock %}
+{% endif %}
+
+{% block content %}
+<div>
+    <h2>Upload Bucket Device - Locations</h2>
+    <p>Upload a CSV file with the following header and column data</p>
+    <code>dev_eui,name,lat,long,marker,address</code>
+</div>
+<div class="col-xs-12" style="height:20px;"></div>
+<hr>
+<div>
+    <h3>Upload File</h3>
+    <strong>Note:</strong> Uploading device info for a source will remove all existing device info for that source.
+    {% crispy form form.helper %}
+</div>
+<div class="col-xs-12" style="height:20px;"></div>
+<hr>
+<h3>Results:</h3>
+<div>
+    <p class="py-3 bg-primary text-white">
+    {% if messages %}
+        {% for result in result_messages %}
+            {{ result }}<br>
+        {% endfor %}
+    {% endif %}
+    </p>
+</div>
+{% endblock %}

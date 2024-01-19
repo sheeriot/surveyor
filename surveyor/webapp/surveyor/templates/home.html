@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+
+<p />
+
+<p>
+Welcome to the RF Field Surveryor Tool!
+</p>
+{% if user.is_authenticated %}
+<p>Please report defects and enhancement requests to Kris Thompson.</p>
+<hr />
+<div class="d-flex justify-content-center">
+    <img src="{% static 'endlessknot.svg' %}" height="376" width="480" />
+</div>
+<p />
+<p />
+<div class="row">
+<div class="col-sm-8 mx-auto d-flex justify-content-center">
+    <p>
+        <a href="https://en.wikipedia.org/wiki/Endless_knot">The Endless Knot</a>.
+    </p>
+</div>
+</div>
+{% endif %}
+{% endblock %}

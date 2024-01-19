@@ -1,0 +1,29 @@
+<hr>
+<h4>Summary Table</h4>
+<table class="table table-striped table-bordered w-auto">
+  <tr>
+    <th>First Frame</th>
+    <th>Device Count</th>
+    <th>Uplinks Received</th>
+    <th>Rejoiners Count</th>
+
+  </tr>
+  <tr>
+    <td>{{ totals_dict.frame_first|date:"Y-m-d H:i:s (e)" }}</td>
+    <td>{{ totals_dict.device_count }}</td>
+    <td>{{ totals_dict.uplinks_received }}</td>
+    <td>{{ totals_dict.rejoiners }}</td>
+  </tr>
+  <tr>
+    <th>Last Frame</th>
+    <th>Gateway Count</th>
+    <th>Frames Received</th>
+    <th>Rejoin Rate</th>
+  </tr>
+  <tr>
+    <td>{{ totals_dict.frame_last|date:"Y-m-d H:i:s (e)" }}</td>
+    <td>{{ totals_dict.gateway_count }}</td>
+    <td>{{ totals_dict.frames_received }}</td>
+    <td><strong>{{ totals_dict.rejoin_rate|floatformat:1 }}%</strong></td>
+  </tr>
+</table>

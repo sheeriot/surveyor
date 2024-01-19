@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load mathfilters %}
+
+{% load dataframe_template_tags %}
+
+{% block content %}
+
+<div>
+
+    <img src="{% static 'packtrack06.png' %}" class="d-inline" alt="Pack Track" height="100" width="80">
+    <h2 class="d-inline content-heading">bucketDevice > packGraph</h2>
+</div>
+{% if goodrequest %}
+<hr>
+<div>
+    Requested Report:
+    <a href="{% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}">
+        {% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}
+    </a>
+    <ul class="list-group list-group-horizontal-sm">
+        <li class="list-group-item">Source:<br>{{ source_name }}</li>
+        <li class="list-group-item">Measurement:<br>{{ meas }}</li>
+        <li class="list-group-item">Dev_EUI:<br><a href="https://ns.us.everynet.io/devices/{{ dev_eui }}" target="_blank">{{ dev_eui }}</a> (LNS)</li>
+        <li class="list-group-item">Start:<br>{{ start|date:"Y-m-d H:i (e)" }}</li>
+        <li class="list-group-item">End:<br>{{ end|date:"Y-m-d H:i (e)" }}</li>
+    </ul>
+    Want more devices: <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices</a>
+</div>
+<hr>
+{% endif %}
+<div>
+    {% crispy form form.helper %}
+</div>
+
+<div style="clear:both" id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
+  <p class="mb-0 text-black-75">Messages:
+  {{ console_messages }}</p>
+</div>
+
+{% block error_message %}
+{% if error_message %}
+    <hr>
+    <h3>Error:</h3>
+    <div class="alert alert-danger">{{ error_message }}</div>
+{% endif %}
+{% endblock %}
+
+{% if results_display %}
+<hr>
+<h3>Results: {{ dev_eui }}</h3>
+<p>Contents:</p>
+<ul class="list-group list-group-horizontal-sm">
+    <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
+    <li class="list-group-item"><a href="#uplinks-timeplot">Uplinks/Time Plot</a></li>
+    <li class="list-group-item"><a href="#device-uplinks">Device Uplinks Table</a></li>
+    <li class="list-group-item"><a href="#received-frames">Received Frames Table</a></li>
+</ul>
+<hr>
+<h4 id="summary-table">Summary Table</h4>
+<table class="table table-bordered table-light text-center">
+    <tr>
+        <th>First Frame</th>
+        <th>Frames Received</th>
+        <th>Uplinks Received</th>
+        <th>Uplinks Missed</th>
+    </tr>
+    <tr>
+        <td>{{ frames_first|date:"Y-m-d H:i (e)" }}</td>
+        <td>{{ frames_received }}</td>
+        <td>{{ uplinks_received }}</td>
+        <td>{{ uplinks_missed }}</td>
+    </tr>
+    <tr>
+        <th>Last Frame</th>
+        <th>Gateways</th>
+        <th>ReJoins</th>
+        <th>Packet Delivery Ratio</th>
+    </tr>
+    <tr>
+        <td>{{ frames_last|date:"Y-m-d H:i (e)" }}</td>
+        <td>{{ gateway_count }}</td>
+        <td>{{ rejoins }}</td>
+        <td>{{ uplinks_pdr|mul:100|floatformat:1 }}%</td>
+    </tr>
+</table>
+{% if graph %}
+<hr>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<h3 id="uplinks-timeplot">RF Uplinks - Time Plot: {{ meas }}@{{ source_name }}</h3>
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph|safe}}">
+</div>
+{% endif %}
+<hr>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<h4 id="device-uplinks">Device Uplinks</h4>
+
+<table id="device-uplinks" class="table table-bordered dt-responsive nowrap w-100">
+    <thead>
+     {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
+    </thead>
+    <tbody>
+      {{ device_uplinks_df|convert_data_frame_to_html_table_rows|safe}}
+    </tbody>
+</table>
+
+<hr>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<h4 id="received-frames">Received Frames</h4>
+
+<table id="received-frames" class="table table-bordered dt-responsive nowrap w-100">
+    <thead>
+     {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
+    </thead>
+    <tbody>
+      {{ frames_df | convert_data_frame_to_html_table_rows | safe}}
+    </tbody>
+</table>
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,17 @@
+@startuml surveyor
+' top to bottom direction
+
+[nothing] -d-> ticket
+ticket -r-> docs
+ticket -d-> requirements
+requirements -d-> design
+requirements <-u-> docs
+design -d-> parameters
+design <-u-> docs
+parameters -d-> implement
+parameters <-u-> docs
+implement <-u-> docs
+implement -d-> operate
+docs <-> operate
+
+@enduml

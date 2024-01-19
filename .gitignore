@@ -1,0 +1,37 @@
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+
+# no db.sqlite files in repo
+db.sqlite*
+
+/static
+.DS_Store
+docker-compose.override.yml
+.vscode
+
+# ENV files should not be in version control
+.env
+django.env
+
+# Python Virtual Environments
+venv
+**/venv-**
+
+# Jupyter Notebook Stuff
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+notebooks/locations/*
+
+# surveyor
+surveyor/webapp/static/icon_cache
+
+# db working folder
+db_*/*
+
+# ignore scratch folder
+scratch/*
+surveyor/webapp/xfer

@@ -1,0 +1,28 @@
+{% load dataframe_template_tags %}
+
+<hr>
+<h3>Device RF Performance Map</h3>
+{% if map_one %}
+  <div>
+      <h2>Main Map</h2>
+      <strong>Tip</strong>: Use the overlay controls in the top right corner of the map to select the data to display; RSSI, SNR, Uplink Success Rate.
+    <div id="map_one">
+      {{ map_one|safe }}
+    </div>
+    map time: {{ map_time }}s
+  </div>
+{% else %}
+  <p>No map available - check bucketDevice table for location info.</p>
+{% endif %}
+
+<h3>Gateways Table</h3>
+
+<div id="gateway-list">
+{% for row in gw_info_df.itertuples %}
+  {{ row.gateway }}@{{ row.lat }}/{{ row.long }}({{ row.devices }})&nbsp;&nbsp;
+{% endfor %}
+</div>
+
+<div id="map_two">
+selected gateway(s) map goes here
+</div>

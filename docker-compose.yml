@@ -1,0 +1,46 @@
+# Surveyor Base docker-compose file. Use docker-compose.override.yml files as needed.
+version: '3.8' # informative only
+
+services:
+
+  surveyor:
+    build:
+      context: ./surveyor
+    env_file:
+      - surveyor/env/django.env
+    entrypoint: /opt/app/docker-entrypoint.sh  # export static, migrate then run "command" from shell
+    command: gunicorn --bind=0.0.0.0:8000 --workers=3 --timeout 120 surveyor.wsgi
+    ports:
+     - 8000:8000
+    volumes:
+      - surveyor_staticfiles:/opt/app/static_files
+      # - $PWD/surveyor/webapp:/opt/app/surveyor
+      - local-db:/opt/app/db
+    # restart: unless-stopped
+
+  surveyor_worker:
+    build:
+      context: ./surveyor
+    env_file:
+      - surveyor/env/django.env
+    entrypoint: /opt/app/docker-entrypoint-worker.sh
+    command: celery -A surveyor worker -l info
+    volumes:
+      # - $PWD/surveyor/webapp:/opt/app/surveyor
+      - local-db:/opt/app/db
+    restart: unless-stopped
+    depends_on:
+      - surveyor
+
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/redis/data
+
+volumes:
+  local-db:
+  surveyor_staticfiles:
+  redis-data:
