@@ -1,25 +1,12 @@
 services:
 
   surveyor:
-    networks:
-      - webhost
-    # ports:
-    #   - 8000:8000
     volumes:
-      # use this for developmemnt, and debugging if needed
+      # use this for development, and debugging if needed
       - $PWD/surveyor/webapp:/opt/app/surveyor
 
   surveyor_worker:
-    networks:
-      - webhost
     volumes:
-      # use this for developmemnt, and debugging if needed
+      # use this for development, and debugging if needed
       - $PWD/surveyor/webapp:/opt/app/surveyor
 
-  redis:
-    networks:
-      - webhost
-
-networks:
-  webhost:
-    external: true
