@@ -44,3 +44,8 @@ volumes:
   local-db:
   surveyor_staticfiles:
   redis-data:
+
+networks:
+  default: 
+    name: webhost
+    external: true
