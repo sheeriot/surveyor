@@ -14,9 +14,7 @@ services:
      - 8000:8000
     volumes:
       - surveyor_staticfiles:/opt/app/static_files
-      # - $PWD/surveyor/webapp:/opt/app/surveyor
       - local-db:/opt/app/db
-    # restart: unless-stopped
 
   surveyor_worker:
     build:
@@ -26,11 +24,8 @@ services:
     entrypoint: /opt/app/docker-entrypoint-worker.sh
     command: celery -A surveyor worker -l info
     volumes:
-      # - $PWD/surveyor/webapp:/opt/app/surveyor
       - local-db:/opt/app/db
     restart: unless-stopped
-    depends_on:
-      - surveyor
 
   redis:
     image: redis:7.2-alpine
