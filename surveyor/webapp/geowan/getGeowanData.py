@@ -46,9 +46,10 @@ def getGeowanFrames(source_id, meas, dev_eui, start, end):
         append_flag = False
         df_list = influx_pdf
         columns_set = set([col for df in df_list for col in df.columns])
-        frames_df = pd.empty()
+        frames_df = pd.DataFrame()
         for df in df_list:
             missing_cols = columns_set - set(df.columns)
+            ic(missing_cols)
             df = df.reindex(columns=df.columns.tolist() + list(missing_cols))
             if append_flag:
                 frames_df = pd.concat([frames_df, df], axis=0)
@@ -66,6 +67,7 @@ def getGeowanFrames(source_id, meas, dev_eui, start, end):
     except influx_pdf.DoesNotExist:
         raise ValueError(F"No Result/Table: {meas}")
 
+    ic(influx_pdf.info())
     # prune to only GPS_Valid Frames
     influx_pdf = influx_pdf[influx_pdf['gps_valid']]
     if influx_pdf.empty:
