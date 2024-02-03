@@ -105,10 +105,25 @@
 
 <hr>
 {% if not frames_df.empty %}
-Goto: <a href="#top">Top</a>
+
 <h4 id="climate-data">Climate Data: {{ dev_eui }}</h4>
+
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('climate-table');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+
 <table id="climate-table" class="table table-bordered dt-responsive nowrap w-auto text-sm-start">
-    <thead>
+  <caption>Climate Data - {{ endnode.dev_eui }}</caption>
+  <thead>
       {{ frames_df|convert_data_frame_to_html_table_headers|safe }}
     </thead>
     <tbody>

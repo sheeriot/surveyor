@@ -109,8 +109,22 @@
 {% endif %}
 <hr>
 <h4 id="device-uplinks">Device Uplinks</h4>
-<ul><li><a href="#top">goto Top</a></li></ul>
-<table id="device-uplinks" class="table table-bordered dt-responsive nowrap w-100">
+
+<div class="row row-cols-auto">
+    <div class="col">
+      <a class="btn btn-rounded btn-success btn-sm" href="#">
+        <i class="bi bi-arrow-90deg-up"></i> Top
+      </a>
+    </div>
+    <div class="col">
+      <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('device-uplinks');">
+        <i class="bi bi-file-spreadsheet"></i> Download CSV
+      </button>
+    </div>
+  </div>
+
+<table id="device-uplinks" class="table caption-top table-bordered dt-responsive nowrap w-100">
+    <caption>Device Uplinks - {{ endnode.dev_eui }}</caption>
     <thead>
      {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
     </thead>
@@ -121,8 +135,22 @@
 
 <hr>
 <h4 id="received-frames">Received Frames</h4>
-<ul><li><a href="#top">goto Top</a></li></ul>
+
+<div class="row row-cols-auto">
+    <div class="col">
+      <a class="btn btn-rounded btn-success btn-sm" href="#">
+        <i class="bi bi-arrow-90deg-up"></i> Top
+      </a>
+    </div>
+    <div class="col">
+      <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('received-frames');">
+        <i class="bi bi-file-spreadsheet"></i> Download CSV
+      </button>
+    </div>
+  </div>
+
 <table id="received-frames" class="table table-bordered dt-responsive nowrap w-100">
+    <caption>Received Frames - {{ endnode.dev_eui }}</caption>
     <thead>
      {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
     </thead>

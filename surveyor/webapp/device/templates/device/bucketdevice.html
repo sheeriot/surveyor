@@ -8,9 +8,8 @@
 {% block content %}
 
 <div>
-
-    <img src="{% static 'packtrack06.png' %}" class="d-inline" alt="Pack Track" height="100" width="80">
-    <h2 class="d-inline content-heading">bucketDevice > packGraph</h2>
+  <img src="{% static 'packtrack06.png' %}" class="d-inline" alt="Pack Track" height="100" width="80">
+  <h2 class="d-inline content-heading">bucketDevice > packGraph</h2>
 </div>
 {% if goodrequest %}
 <hr>
@@ -94,29 +93,55 @@
 </div>
 {% endif %}
 <hr>
-<ul><li><a href="#top">goto Top</a></li></ul>
 <h4 id="device-uplinks">Device Uplinks</h4>
 
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('device-uplinks');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+
 <table id="device-uplinks" class="table table-bordered dt-responsive nowrap w-100">
-    <thead>
-     {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
-    </thead>
-    <tbody>
-      {{ device_uplinks_df|convert_data_frame_to_html_table_rows|safe}}
-    </tbody>
+  <caption>Device Uplinks - {{ dev_eui }}</caption>
+  <thead>
+    {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
+  </thead>
+  <tbody>
+    {{ device_uplinks_df|convert_data_frame_to_html_table_rows|safe}}
+  </tbody>
 </table>
 
 <hr>
-<ul><li><a href="#top">goto Top</a></li></ul>
 <h4 id="received-frames">Received Frames</h4>
 
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('received-frames');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+
 <table id="received-frames" class="table table-bordered dt-responsive nowrap w-100">
-    <thead>
-     {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
-    </thead>
-    <tbody>
-      {{ frames_df | convert_data_frame_to_html_table_rows | safe}}
-    </tbody>
+  <caption>Received Frames - {{ dev_eui }}</caption>
+  <thead>
+    {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
+  </thead>
+  <tbody>
+    {{ frames_df | convert_data_frame_to_html_table_rows | safe}}
+  </tbody>
 </table>
 
 {% endif %}
