@@ -17,7 +17,21 @@ Notes:
   <li>ABP devices that restart their uplnk counter during query window will produce invalid results</li>
 </ul>
 
-<table id="device-uplinks-table" class="table table-striped table-bordered .table-fixed w-auto">
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('bucket-device-details');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+
+<table id="bucket-device-details" class="table table-striped table-bordered .table-fixed w-auto">
+  <caption>Bucket Devices - Details</caption>
   <thead>
     {{ device_uplinks_df | convert_data_frame_to_html_table_headers | safe}}
    </thead>
@@ -31,9 +45,23 @@ Notes:
 
 <hr>
 <div id="device-gateway">
-<h3>Device/Gateway Results:</h3>
-<ul><li><a href="#top">goto Top</a></li></ul>
-<table class="table table-striped table-bordered .table-fixed w-auto">
+<h3>Device/Gateway Results</h3>
+
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('device-gateway-results');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+
+<table id="device-gateway-results" class="table table-striped table-bordered .table-fixed w-auto">
+  <caption>Bucket Device by Gateway</caption>
   <thead>
     {{ device_gw_df | convert_data_frame_to_html_table_headers | safe}}
   </thead>

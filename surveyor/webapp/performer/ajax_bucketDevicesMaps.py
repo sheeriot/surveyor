@@ -162,7 +162,6 @@ def bucketDevicesMaps(request):
         scrollWheelZoom=False,
         control_scale=True,
         tiles="OpenStreetMap",
-
     )
 
     # create rings

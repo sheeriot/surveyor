@@ -204,6 +204,7 @@ def geoView(request, deveui='', **kwargs):
     map_one = folium.Map(
         location=(lat_center, long_center),
         zoom_start=14,
+        scrollWheelZoom=False,
         control_scale=True,
         tiles="OpenStreetMap"
     )
