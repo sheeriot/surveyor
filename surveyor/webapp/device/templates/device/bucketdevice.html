@@ -109,7 +109,7 @@
 </div>
 
 <table id="device-uplinks" class="table table-bordered dt-responsive nowrap w-100">
-  <caption>Device Uplinks - {{ endnode.dev_eui }}</caption>
+  <caption>Device Uplinks - {{ dev_eui }}</caption>
   <thead>
     {{ device_uplinks_df|convert_data_frame_to_html_table_headers|safe}}
   </thead>
@@ -135,7 +135,7 @@
 </div>
 
 <table id="received-frames" class="table table-bordered dt-responsive nowrap w-100">
-  <caption>Received Frames - {{ endnode.dev_eui }}</caption>
+  <caption>Received Frames - {{ dev_eui }}</caption>
   <thead>
     {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
   </thead>
