@@ -1,13 +1,21 @@
 import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
+import pytz
+import pandas as pd
 
 from datetime import datetime, timedelta
+from geopy.distance import geodesic
 
-import pytz
-# import django.utils.timezone as tz
-# from django.conf import settings
-# from icecream import ic
+from icecream import ic
+
+
+def geoDistance(lat1, long1, lat2, long2):
+    if any([pd.isnull(lat1), pd.isnull(long1), pd.isnull(lat2), pd.isnull(long2)]):
+        return None
+    # ic(pd.isnull(lat1), type(long1), lat2, long2)
+    dist = round(geodesic((lat1, long1), (lat2, long2)).km, 3)
+    return dist
 
 
 def getGraph():
