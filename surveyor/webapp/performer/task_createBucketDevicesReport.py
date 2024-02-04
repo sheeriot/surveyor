@@ -5,13 +5,14 @@ import json
 
 from time import perf_counter
 import pandas as pd
-from geopy.distance import geodesic
+# from geopy.distance import geodesic
 # from icecream import ic
 
 from device.models import BucketDevice
 from device.locate import pluscode2latlon
 
 from .getBucketData import getBucketData
+from surveyor.utils import geoDistance
 
 
 # Add an additional blank line before the decorator
@@ -147,21 +148,12 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     gw_loc_df2 = gw_loc_df.set_index('gateway').add_prefix('gw_')
     device_gw_df = device_gw_df.join(gw_loc_df2, on='gateway')
 
+    # this just checks the columns exist
     got_coords = all(ele in device_gw_df for ele in ['lat', 'long', 'gw_lat', 'gw_long'])
-
     if got_coords:
-        # device_gw_df['dist_km'] = device_gw_df.apply(
-        #     lambda row:
-        #         round(geoDistance(row['lat'], row['long'], row['gw_lat'], row['gw_long']) * 1.60934, 2),
-        #     axis=1
-        # )
-        device_gw_df['distance_km'] = device_gw_df.apply(lambda x:
-                                                         round(geodesic(
-                                                            (x['lat'], x['long']),
-                                                            (x['gw_lat'], x['gw_long'])
-                                                         ).km, 3),
-                                                         axis=1
-                                                         )
+        device_gw_df['dist_km'] = device_gw_df.apply(lambda x: geoDistance(x['lat'], x['long'],
+                                                                           x['gw_lat'], x['gw_long']),
+                                                     axis=1)
 
     # optimize columns ordering for default presentation
     device_uplinks_cols = [
