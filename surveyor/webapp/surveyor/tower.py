@@ -3,12 +3,12 @@ def tower_svg():
 <svg width="23px" height="26px" viewBox="0 0 23 26" version="1.1" xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink">
   <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
-  <title>Sites Icon Activated</title>
+  <title>LoRaWAN Gateway</title>
   <desc>Created with Sketch.</desc>
   <g id="Batch-4-Post-Pres" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
     <g id="Infrastructure-and-Solutions-V2" transform="translate(-118.000000, -2800.000000)"
                 stroke="#612A9C" stroke-width="2">
-      <g id="Sites-Icon-Activated" transform="translate(119.000000, 2801.000000)">
+      <g id="LoRaWAN Gateway" transform="translate(119.000000, 2801.000000)">
         <g id="Group-13">
           <g>
             <path d="M13.1738022,6.91723602 C13.1738022,8.4242236 11.9768022,9.64565217 10.4999543,9.64565217

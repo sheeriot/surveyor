@@ -171,9 +171,9 @@ def geoView(request, deveui='', **kwargs):
     context['frames_first'] = frames_df['time'].min()
     context['frames_last'] = frames_df['time'].max()
 
-    # summarize the frames into device_uplinks_df
-
+    # Summarize the frames into device_uplinks_df
     frames_df, uplinks_df = geowanSummFrames(frames_df)
+
     context['gps_uplinks'] = uplinks_df.shape[0]
 
     # Summarize the Gateway Location Table
@@ -206,7 +206,7 @@ def geoView(request, deveui='', **kwargs):
         zoom_start=14,
         scrollWheelZoom=False,
         control_scale=True,
-        tiles="OpenStreetMap"
+        tiles="cartodbpositron",
     )
 
     # color the map markers
@@ -255,9 +255,10 @@ def geoView(request, deveui='', **kwargs):
                 radius=10,
                 popup=f"""
                     GW:{ row['gateway'] }<br>
+                    Count:{ row['count'] }<br>
                     RSSI:<strong>{row['rssi']}</strong>,
                     SNR:{row['snr']}<br>
-                    Distance:{row['dist']:.1f} miles<br>
+                    Distance:{row['dist']:.2f}km<br>
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['rssi_color'],
@@ -266,13 +267,13 @@ def geoView(request, deveui='', **kwargs):
                 fill_opacity=0.2,
             ))
             if gw_loc:
-                rssi_gw_group.add_child(folium.Marker(
-                    location=[gw_lat, gw_long],
-                    icon=folium.DivIcon(f"""{tower_icon}"""),
-                    popup=f"Gateway: {row['gateway']}\n \
-                        {round(gw_lat,5)},{round(gw_long,5)}"
-                    )
-                )
+                # rssi_gw_group.add_child(folium.Marker(
+                #     location=[gw_lat, gw_long],
+                #     icon=folium.DivIcon(f"""{tower_icon}"""),
+                #     popup=f"Gateway: {row['gateway']}\n \
+                #         {round(gw_lat,5)},{round(gw_long,5)}"
+                #     )
+                # )
                 uplink_points = []
                 uplink_points.append((row['lat'], row['long']))
                 uplink_points.append((gw_lat, gw_long))
@@ -280,8 +281,8 @@ def geoView(request, deveui='', **kwargs):
                 # add lines
                 tooltip = F"""
                     RSSI:{ row['rssi'] }, SNR:{ row['snr'] }<br>
-                    Distance:{row['dist']:.1f} miles<br>
-                    Device: { deveui }<br>
+                    Distance:{row['dist']:.2f}km<br>
+                    Device: { dev_eui }<br>
                     Gateway: { row['gateway'] }<br>
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """
@@ -306,9 +307,10 @@ def geoView(request, deveui='', **kwargs):
                 radius=10,
                 popup=f"""
                     GW:{ row['gateway'] }<br>
+                    Count:{ row['count'] }<br>
                     RSSI:{row['rssi']},
                     SNR:<strong>{row['snr']}</strong><br>
-                    Distance:{row['dist']:.1f} miles<br>
+                    Distance:{row['dist']:.2f}km<br>
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['snr_color'],
@@ -316,13 +318,13 @@ def geoView(request, deveui='', **kwargs):
                 fill_color=row['snr_color'],
                 fill_opacity=0.5,
             ))
-            if gw_loc:
-                snr_gw_group.add_child(folium.Marker(
-                    location=[gw_lat, gw_long],
-                    icon=folium.DivIcon(f"""{tower_icon}"""),
-                    popup=f"Gateway: {row['gateway']}\n \
-                        {round(gw_lat,5)},{round(gw_long,5)}"
-                    ))
+            # if gw_loc:
+            #     snr_gw_group.add_child(folium.Marker(
+            #         location=[gw_lat, gw_long],
+            #         icon=folium.DivIcon(f"""{tower_icon}"""),
+            #         popup=f"Gateway: {row['gateway']}\n \
+            #             {round(gw_lat,5)},{round(gw_long,5)}"
+            #         ))
         snr_gw_group.add_to(map_one)
 
         # Add each Tower to Tower_Makers
@@ -346,8 +348,9 @@ def geoView(request, deveui='', **kwargs):
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
+                Count:{ row['count']} ({ row['addr'] })<br>
                 RSSI:<strong>{row['rssi']}</strong>,SNR:{row['snr']}<br>
-                Distance:{row['dist']:.1f} miles<br>
+                Distance:{row['dist']:.2f}km<br>
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['rssi_color'],
@@ -364,8 +367,9 @@ def geoView(request, deveui='', **kwargs):
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
+                Count:{ row['count']} ({ row['addr'] })<br>
                 RSSI:{row['rssi']},SNR:<strong>{row['snr']}</strong><br>
-                Distance:{row['dist']:.1f} miles<br>
+                Distance:{row['dist']:.2f}km<br>
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['snr_color'],

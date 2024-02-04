@@ -2,14 +2,16 @@ import pandas as pd
 # from icecream import ic
 
 from surveyor.utils import computed_rssi
-from .utils import geoDistance
+from geopy.distance import geodesic
 
 
 def geowanSummFrames(frames_df):
-    # calculate distance
+
     frames_df['distance'] = frames_df.apply(lambda x:
-                                            geoDistance(x['latitude'], x['longitude'],
-                                                        x['gw_latitude'], x['gw_longitude']),
+                                            round(geodesic(
+                                                    (x['latitude'], x['longitude']),
+                                                    (x['gw_latitude'], x['gw_longitude'])
+                                            ).km, 3),
                                             axis=1
                                             )
 

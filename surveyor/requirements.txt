@@ -14,7 +14,8 @@ requests
 numpy
 gunicorn
 pytz
-geopandas
+# geopandas
+geopy
 networkx
 libpysal
 rtree

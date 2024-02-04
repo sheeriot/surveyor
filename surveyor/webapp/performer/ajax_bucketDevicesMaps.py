@@ -8,6 +8,7 @@ from time import perf_counter
 import dateutil.parser
 import dateutil.tz
 import pandas as pd
+from geopy.distance import geodesic
 
 import redis
 import json
@@ -18,7 +19,7 @@ import folium
 from celery.result import AsyncResult
 from device.models import InfluxSource, BucketDevice
 from device.locate import pluscode2latlon
-from geowan.utils import geoDistance
+
 from surveyor.settings import TIME_ZONE
 from .colorscales import color_lookup_red0
 from surveyor.tower import tower_svg
@@ -161,7 +162,7 @@ def bucketDevicesMaps(request):
         zoom_start=14,
         scrollWheelZoom=False,
         control_scale=True,
-        tiles="OpenStreetMap",
+        tiles="cartodbpositron",
     )
 
     # create rings
@@ -241,7 +242,13 @@ def bucketDevicesMaps(request):
                     [row['lat'], row['long']],
                     [row['gw_lat'], row['gw_long']],
                 ]
-                dist_km = round(geoDistance(row['lat'], row['long'], row['gw_lat'], row['gw_long']) * 1.60934, 2)
+                dist_km = round(
+                    geodesic(
+                        (row['lat'], row['long']),
+                        (row['gw_lat'], row['gw_long'])
+                    ).km,
+                    3
+                )
 
                 # add lines
                 tooltip = F"""
