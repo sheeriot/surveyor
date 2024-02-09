@@ -20,17 +20,25 @@ from accounts.models import Person
 # Register your models here.
 # admin.site.register(EndNode, EndNodeAdmin)
 
-admin.site.register(SurveyorOrg)
-admin.site.register(InfluxSource)
 
+class SurveyorOrgAdmin(admin.ModelAdmin):
+    search_fields = ['name']
+
+admin.site.register(SurveyorOrg,SurveyorOrgAdmin)
 
 class EndNodeAdmin(admin.ModelAdmin):
     search_fields = ['dev_eui', 'name']
     ordering = ('surveyor_org', 'influx_source', 'name')
 
-
 admin.site.register(EndNode, EndNodeAdmin)
 
+class InfluxSourceAdmin(admin.ModelAdmin):
+    list_display = ('surveyor_org', 'name', 'dbname', 'host')
+    list_filter = ['surveyor_org']
+    search_fields = ['surveyor_org', 'name', 'dbname']
+    ordering = ('surveyor_org', 'name')
+
+admin.site.register(InfluxSource, InfluxSourceAdmin)
 
 class BucketDeviceImportForm(forms.Form):
     influx_source = forms.ModelChoiceField(queryset=InfluxSource.objects.all())
