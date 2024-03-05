@@ -159,7 +159,7 @@ def bucketDevicesReport(request, **kwargs):
     async_result = create_bucketDevicesReport.delay(
         source.id, meas, start_mark, end_mark,
         center=(center_latitude, center_longitude),
-        rings=radius_km)
+        rings=radius_km, requester=person.username)
 
     task_id = async_result.task_id
     console_messages.append(F'Task ID: {task_id}')
