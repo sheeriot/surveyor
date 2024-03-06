@@ -1,0 +1,44 @@
+name: Deploy Surveyor to VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Surveyor Environment to Deploy'
+        type: environment
+        required: true
+      action:
+        description: 'Action to Perform'
+        type: choice
+        options:
+          - 'test'
+          - 'deploy'
+          - 'revert'
+
+run-name: ${{ github.event.inputs.environment }} - Surveyor Deployment Action ${{ github.event.inputs.action }}
+
+jobs:
+
+  deploy-surveyor:
+
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    env:
+      ENV_NAME: ${{ github.event.inputs.environment }}
+      # INFRA_NAME: ${{ vars.INFRA_NAME }}
+
+    steps:
+
+      - name: SSH and Redeploy Surveyor
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_PRIVATEKEY }}
+          script: |
+            cd /opt/docker/surveyor && git pull
+            docker compose down
+            docker compose build
+            docker compose up -d
+            cd ../webhost
+            docker compose restart
