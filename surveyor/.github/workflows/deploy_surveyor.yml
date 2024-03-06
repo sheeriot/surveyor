@@ -29,21 +29,16 @@ jobs:
 
     steps:
 
-      # - name: SSH to remote host
-      #   uses: appleboy/ssh-action@master
-      #   with:
-      #     host: ${{ vars.DEPLOY_HOST }}
-      #     username: ${{ vars.DEPLOY_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Pull latest surveyor code
-        run: ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} 'cd /opt/docker/surveyor && git pull'
-
-      - name: Stop Existing Surveyor Docker Containers
-        run: ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} 'cd /opt/docker/surveyor && docker compose down'
-
-      - name: Build and Start new Surveyor Docker Containers
-        run: ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} 'cd /opt/docker/surveyor && docker compose up --build -d'
-
-      - name: Restart NGINX Webhost
-        run: ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} 'cd /opt/docker/webhost && docker compose restart'
+      - name: SSH and Redeploy Surveyor
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_PRIVATEKEY }}
+          script: |
+            cd /opt/docker/surveyor && git pull
+            docker compose down
+            docker compose build
+            docker compose up -d
+            cd ../webhost
+            docker compose restart
