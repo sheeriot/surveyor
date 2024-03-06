@@ -24,21 +24,27 @@ from accounts.models import Person
 class SurveyorOrgAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
-admin.site.register(SurveyorOrg,SurveyorOrgAdmin)
+
+admin.site.register(SurveyorOrg, SurveyorOrgAdmin)
+
 
 class EndNodeAdmin(admin.ModelAdmin):
     search_fields = ['dev_eui', 'name']
     ordering = ('surveyor_org', 'influx_source', 'name')
 
+
 admin.site.register(EndNode, EndNodeAdmin)
+
 
 class InfluxSourceAdmin(admin.ModelAdmin):
     list_display = ('surveyor_org', 'name', 'dbname', 'host')
     list_filter = ['surveyor_org']
-    search_fields = ['surveyor_org', 'name', 'dbname']
+    search_fields = ['name', 'dbname']
     ordering = ('surveyor_org', 'name')
 
+
 admin.site.register(InfluxSource, InfluxSourceAdmin)
+
 
 class BucketDeviceImportForm(forms.Form):
     influx_source = forms.ModelChoiceField(queryset=InfluxSource.objects.all())
