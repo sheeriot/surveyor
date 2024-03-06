@@ -145,8 +145,12 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
             device_loc_df['long'] = device_loc_df['long'].round(6)
             device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
 
-    gw_loc_df2 = gw_loc_df.set_index('gateway').add_prefix('gw_')
-    device_gw_df = device_gw_df.join(gw_loc_df2, on='gateway')
+    # ic(gw_loc_df.info())
+
+    # if gateway locations are provided (talking to you ran-bridge), then add gw_location to device_gw_df
+    if 'gateway' in gw_loc_df.columns:
+        gw_loc_df2 = gw_loc_df.set_index('gateway').add_prefix('gw_')
+        device_gw_df = device_gw_df.join(gw_loc_df2, on='gateway')
 
     # this just checks the columns exist
     got_coords = all(ele in device_gw_df for ele in ['lat', 'long', 'gw_lat', 'gw_long'])
