@@ -328,14 +328,17 @@ def geoView(request, deveui='', **kwargs):
         snr_gw_group.add_to(map_one)
 
         # Add each Tower to Tower_Makers
-        tower_markers.add_child(folium.Marker(
-            location=[gw_lat, gw_long],
-            icon=folium.DivIcon(f"""{tower_icon}"""),
-            popup=f"""
-                Gateway: {row['gateway']}\n
-                {gw_lat},{gw_long}
-            """
-        ))
+        if gw_lat is None or gw_long is None:
+            continue
+        else:
+            tower_markers.add_child(folium.Marker(
+                location=[gw_lat, gw_long],
+                icon=folium.DivIcon(f"""{tower_icon}"""),
+                popup=f"""
+                    Gateway: {row['gateway']}\n
+                    {gw_lat},{gw_long}
+                """
+            ))
 
     # add Tower Markers to map_one
     tower_markers.add_to(map_one)

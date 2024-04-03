@@ -1,19 +1,25 @@
 import pandas as pd
-# from icecream import ic
+from icecream import ic
 
 from surveyor.utils import computed_rssi
 from geopy.distance import geodesic
 
 
-def geowanSummFrames(frames_df):
+def geodist(lat1, lon1, lat2, lon2):
+    coords = pd.Series([lat1, lon1, lat2, lon2])
+    if coords.isnull().values.any():
+        return None
+    return round(geodesic((lat1, lon1), (lat2, lon2)).km, 3)
 
-    frames_df['distance'] = frames_df.apply(lambda x:
-                                            round(geodesic(
-                                                    (x['latitude'], x['longitude']),
-                                                    (x['gw_latitude'], x['gw_longitude'])
-                                            ).km, 3),
-                                            axis=1
-                                            )
+
+def geowanSummFrames(frames_df):
+    # ic(frames_df.info())
+    frames_df['distance'] = frames_df.apply(lambda x: geodist(x['latitude'],
+                                                              x['longitude'],
+                                                              x['gw_latitude'],
+                                                              x['gw_longitude']
+                                                            ),
+                                            axis=1)
 
     # computed rssi
     frames_df['rssi_c'] = frames_df.apply(lambda x: computed_rssi(x['rssi'], x['snr']), axis=1)
