@@ -29,8 +29,10 @@ admin.site.register(SurveyorOrg, SurveyorOrgAdmin)
 
 
 class EndNodeAdmin(admin.ModelAdmin):
-    search_fields = ['dev_eui', 'name']
+    search_fields = ['dev_eui', 'name', 'manufacturer']
+    list_display = ['name', 'dev_eui', 'surveyor_org', 'manufacturer', 'model']
     ordering = ('surveyor_org', 'influx_source', 'name')
+    list_filter = ['surveyor_org']
 
 
 admin.site.register(EndNode, EndNodeAdmin)
