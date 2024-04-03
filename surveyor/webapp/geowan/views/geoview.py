@@ -250,6 +250,11 @@ def geoView(request, deveui='', **kwargs):
 
         # first the RSSI markers
         for index, row in frame_stats.iterrows():
+            if 'dist' in row:
+                dist_txt = "Distance:{row['dist']:.2f}km<br>"
+            else:
+                dist_txt = ''
+
             rssi_gw_group.add_child(folium.CircleMarker(
                 location=(row['lat'], row['long']),
                 radius=10,
@@ -258,7 +263,7 @@ def geoView(request, deveui='', **kwargs):
                     Count:{ row['count'] }<br>
                     RSSI:<strong>{row['rssi']}</strong>,
                     SNR:{row['snr']}<br>
-                    Distance:{row['dist']:.2f}km<br>
+                    {dist_txt}
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['rssi_color'],
@@ -302,6 +307,10 @@ def geoView(request, deveui='', **kwargs):
         snr_gw_group = folium.FeatureGroup(F"{gateway} - SNR")
         # SNR Markers
         for index, row in frame_stats.iterrows():
+            if 'dist' in row:
+                dist_txt = "Distance:{row['dist']:.2f}km<br>"
+            else:
+                dist_txt = ''
             snr_gw_group.add_child(folium.CircleMarker(
                 location=(row['lat'], row['long']),
                 radius=10,
@@ -310,7 +319,7 @@ def geoView(request, deveui='', **kwargs):
                     Count:{ row['count'] }<br>
                     RSSI:{row['rssi']},
                     SNR:<strong>{row['snr']}</strong><br>
-                    Distance:{row['dist']:.2f}km<br>
+                    {dist_txt}
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['snr_color'],
@@ -347,13 +356,17 @@ def geoView(request, deveui='', **kwargs):
     best_rssi_makers = folium.FeatureGroup("Best - RSSI")
     # RSSI Markers
     for index, row in frames_df.iterrows():
+        if 'dist' in row:
+            dist_txt = "Distance:{row['dist']:.2f}km<br>"
+        else:
+            dist_txt = ''
         best_rssi_makers.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
                 Count:{ row['count']} ({ row['addr'] })<br>
                 RSSI:<strong>{row['rssi']}</strong>,SNR:{row['snr']}<br>
-                Distance:{row['dist']:.2f}km<br>
+                {dist_txt}
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['rssi_color'],
@@ -366,13 +379,17 @@ def geoView(request, deveui='', **kwargs):
     best_snr_makers = folium.FeatureGroup("Best - SNR")
     # SNR Markers
     for index, row in frames_df.iterrows():
+        if 'dist' in row:
+            dist_txt = "Distance:{row['dist']:.2f}km<br>"
+        else:
+            dist_txt = ''
         best_snr_makers.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
                 Count:{ row['count']} ({ row['addr'] })<br>
                 RSSI:{row['rssi']},SNR:<strong>{row['snr']}</strong><br>
-                Distance:{row['dist']:.2f}km<br>
+                {dist_txt}
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['snr_color'],
