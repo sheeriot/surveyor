@@ -14,12 +14,13 @@ def geodist(lat1, lon1, lat2, lon2):
 
 def geowanSummFrames(frames_df):
     # ic(frames_df.info())
-    frames_df['distance'] = frames_df.apply(lambda x: geodist(x['latitude'],
-                                                              x['longitude'],
-                                                              x['gw_latitude'],
-                                                              x['gw_longitude']
-                                                            ),
-                                            axis=1)
+    if set(['latitude', 'longitude', 'gw_latitude', 'gw_longitude']).issubset(frames_df.columns):
+        frames_df['distance'] = frames_df.apply(
+            lambda x: geodist(x['latitude'],
+                              x['longitude'],
+                              x['gw_latitude'],
+                              x['gw_longitude']),
+            axis=1)
 
     # computed rssi
     frames_df['rssi_c'] = frames_df.apply(lambda x: computed_rssi(x['rssi'], x['snr']), axis=1)
