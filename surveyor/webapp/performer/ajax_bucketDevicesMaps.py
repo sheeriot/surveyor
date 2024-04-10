@@ -86,13 +86,13 @@ def bucketDevicesMaps(request):
         device_loc_df = pd.DataFrame(device_loc_dict)
 
         # find all dev_eui in device.BucketDevice, all seen, and missing list
-        devices_withloc = list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        # devices_withloc =
+        #       list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        devices_withloc = list(device_loc_df['dev_eui'])
         devices_seen = list(device_uplinks_df['dev_eui'])
         devices_missing = set(devices_withloc) - set(devices_seen)
         # create a DF for mapping missing
         devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
-
-
 
     else:
         # pass task.state as report_status if NOT SUCCESS
@@ -126,11 +126,6 @@ def bucketDevicesMaps(request):
             return HttpResponse('<hr><h4>No Map</h4>No Device Location Info, no Map!')
 
     device_uplinks_df = device_uplinks_df.set_index('dev_eui')
-
-    # add location to device_uplinks_df and device_gw_df
-    device_uplinks_df = device_uplinks_df.join(device_loc_df)
-
-    # device_gw_df = device_gw_df.join(device_loc_df[['lat','long']],on='dev_eui')
 
     # copy gw_loc_df to gw_info_df
     gw_info_df = gw_loc_df.copy().set_index('gateway')

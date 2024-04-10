@@ -12,7 +12,7 @@ import pandas as pd
 import dateutil.parser
 import dateutil.tz
 
-from device.models import BucketDevice
+# from device.models import BucketDevice
 # from icecream import ic
 
 
@@ -59,9 +59,15 @@ def bucketDevicesSummary(request):
         device_uplinks_dict = json.loads(device_uplinks_json)
         device_uplinks_df = pd.DataFrame(device_uplinks_dict)
 
-        # find all dev_eui in device.BucketDevice
-        #    devices_all = BucketDevice.objects.values_list('dev_eui', flat=True)
-        devices_withloc = list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        # reconstitute the device_locs_df
+        device_loc_json = redis_client.get(f'{task_id}:device_loc_df')
+        device_loc_dict = json.loads(device_loc_json)
+        device_loc_df = pd.DataFrame(device_loc_dict)
+
+        # find all dev_eui in device.BucketDevice, all seen, and missing list
+        # devices_withloc =
+        #           list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        devices_withloc = list(device_loc_df['dev_eui'])
         devices_seen = list(device_uplinks_df['dev_eui'])
         devices_missing = set(devices_withloc) - set(devices_seen)
 

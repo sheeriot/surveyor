@@ -47,7 +47,6 @@ def bucketDevicesPdr(request):
     device_uplinks_json = redis_client.get(f'{task_id}:device_uplinks_df')
     device_uplinks_dict = json.loads(device_uplinks_json)
     device_uplinks_df = pd.DataFrame(device_uplinks_dict)
-    # fix the timestamps
 
     context = {
         'report_status': report_status,
