@@ -39,7 +39,7 @@ admin.site.register(EndNode, EndNodeAdmin)
 
 
 class InfluxSourceAdmin(admin.ModelAdmin):
-    list_display = ('surveyor_org', 'name', 'dbname', 'host')
+    list_display = ('name', 'surveyor_org', 'dbname', 'host')
     list_filter = ['surveyor_org']
     search_fields = ['name', 'dbname']
     ordering = ('surveyor_org', 'name')

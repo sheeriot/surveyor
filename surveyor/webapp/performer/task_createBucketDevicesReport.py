@@ -5,7 +5,7 @@ import json
 
 from time import perf_counter
 import pandas as pd
-# from geopy.distance import geodesic
+
 # from icecream import ic
 
 from device.models import BucketDevice
@@ -145,7 +145,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
             device_loc_df['long'] = device_loc_df['long'].round(6)
             device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
 
-    # ic(gw_loc_df.info())
+    device_loc_df = device_loc_df.reset_index()
 
     # if gateway locations are provided (talking to you ran-bridge), then add gw_location to device_gw_df
     if 'gateway' in gw_loc_df.columns:
@@ -222,6 +222,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
 
     redis_client.setex(f'{task_id}:totals_dict', 3600, json.dumps(totals_dict))
     redis_client.setex(f'{task_id}:gw_loc_df', 3600, gw_loc_df.to_json())
+    redis_client.setex(f'{task_id}:device_loc_df', 3600, device_loc_df.to_json())
     redis_client.setex(f'{task_id}:device_uplinks_df', 3600, device_uplinks_df.to_json())
     redis_client.setex(f'{task_id}:device_gw_df', 3600, device_gw_df.to_json())
 

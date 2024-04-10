@@ -1,4 +1,22 @@
 <hr>
+<div id="device-counts">
+<h3>Device Counts</h3>
+<table class="table table-striped table-bordered w-auto">
+  <tr>
+    <th>Locations</th>
+    <th>Seen</th>
+    <th>Missing</th>
+    <th>No Location</th>
+  </tr>
+  <tr>
+    <td>{{ device_counts.withloc }}</td>
+    <td>{{ device_counts.seen }}</td>
+    <td>{{ device_counts.missing }}</td>
+    <td>{{ device_counts.noloc }}</td>
+  </tr>
+</table>
+
+<hr>
 <h4>Summary Table</h4>
 <table class="table table-striped table-bordered w-auto">
   <tr>

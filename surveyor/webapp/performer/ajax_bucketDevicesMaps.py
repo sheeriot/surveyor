@@ -80,6 +80,20 @@ def bucketDevicesMaps(request):
         device_gw_dict = json.loads(device_gw_json)
         device_gw_df = pd.DataFrame(device_gw_dict)
 
+        # reconstitute the device_locs_df
+        device_loc_json = redis_client.get(f'{task_id}:device_loc_df')
+        device_loc_dict = json.loads(device_loc_json)
+        device_loc_df = pd.DataFrame(device_loc_dict)
+
+        # find all dev_eui in device.BucketDevice, all seen, and missing list
+        devices_withloc = list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        devices_seen = list(device_uplinks_df['dev_eui'])
+        devices_missing = set(devices_withloc) - set(devices_seen)
+        # create a DF for mapping missing
+        devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
+
+
+
     else:
         # pass task.state as report_status if NOT SUCCESS
         report_status = task.state
@@ -192,8 +206,8 @@ def bucketDevicesMaps(request):
         ).add_to(ring_layer)
         ring_layer.add_to(map_one)
 
-    # Connect to Redis to save gateway/device stats
-    redis_client = redis.Redis(host='redis', port=6379, db=0)
+    # # Connect to Redis to save gateway/device stats
+    # redis_client = redis.Redis(host='redis', port=6379, db=0)
 
     top_gateways = (device_gw_df.groupby('gateway')
                     .size().nlargest(5).index.tolist()
@@ -354,6 +368,24 @@ def bucketDevicesMaps(request):
             fill_opacity=1,
         ))
     successrate_layer.add_to(map_one)
+
+    missingdevices_layer = folium.FeatureGroup("Missing Devices")
+    for index, row in devices_missing_df.iterrows():
+        missingdevices_layer.add_child(folium.CircleMarker(
+            location=(row['lat'], row['long']),
+            radius=5,
+            popup=f"""
+                DevEUI: {row['dev_eui']}<br>
+                Marker: {row['marker']}<br>
+                Address: {row['address']}<br>
+                """,
+
+            color='black',
+            fill=True,
+            fill_color='black',
+            fill_opacity=0.7,
+        ))
+    missingdevices_layer.add_to(map_one)
 
     folium.LayerControl().add_to(map_one)
 

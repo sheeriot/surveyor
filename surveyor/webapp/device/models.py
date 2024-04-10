@@ -69,6 +69,8 @@ class SurveyorOrg(models.Model):
         if self.name:
             return self.name
 
+    class Meta:
+        ordering = ('name',)
 
 class InfluxSource(models.Model):
     surveyor_org = models.ForeignKey(

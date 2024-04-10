@@ -7,10 +7,12 @@ from django.template.loader import render_to_string
 from celery.result import AsyncResult
 import redis
 import json
+import pandas as pd
 
 import dateutil.parser
 import dateutil.tz
 
+from device.models import BucketDevice
 # from icecream import ic
 
 
@@ -52,8 +54,29 @@ def bucketDevicesSummary(request):
         else:
             totals_dict = None
 
+        # reconstitute the device_uplinks_df
+        device_uplinks_json = redis_client.get(f'{task_id}:device_uplinks_df')
+        device_uplinks_dict = json.loads(device_uplinks_json)
+        device_uplinks_df = pd.DataFrame(device_uplinks_dict)
+
+        # find all dev_eui in device.BucketDevice
+        #    devices_all = BucketDevice.objects.values_list('dev_eui', flat=True)
+        devices_withloc = list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+        devices_seen = list(device_uplinks_df['dev_eui'])
+        devices_missing = set(devices_withloc) - set(devices_seen)
+
+        devices_noloc = set(devices_seen) - set(devices_withloc)
+
+        device_counts = {
+            'withloc': len(devices_withloc),
+            'seen': len(devices_seen),
+            'missing': len(devices_missing),
+            'noloc': len(devices_noloc)
+        }
+
         context = {
             'totals_dict': totals_dict,
+            'device_counts': device_counts
         }
         rendered = render_to_string('performer/bucketDevicesSummary.html', context)
         return HttpResponse(rendered)
