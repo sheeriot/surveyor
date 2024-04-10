@@ -125,8 +125,6 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         'rssi_max': 'int',
     })
     device_gw_df = device_gw_df.join(device_uplinks_df['uplinks_total'], on='dev_eui')
-    # return index columns to DF columns
-    device_uplinks_df = device_uplinks_df.reset_index()
 
     # add the lat/long to the device_gw_df
     # only able to map devices with locations
@@ -134,7 +132,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         device_loc_df = device_uplinks_df[['dev_eui', 'pluscode']].copy().dropna()
         device_loc_df['lat'], device_loc_df['long'] = zip(*device_loc_df['pluscode'].apply(pluscode2latlon))
         device_loc_df = device_loc_df.drop(columns=['pluscode']).set_index('dev_eui')
-        device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
+
     else:
         device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(influx_source=source_id).values()))
         if device_loc_df.shape[0] > 0:
@@ -143,8 +141,13 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
             device_loc_df = device_loc_df.set_index('dev_eui')
             device_loc_df['lat'] = device_loc_df['lat'].round(6)
             device_loc_df['long'] = device_loc_df['long'].round(6)
-            device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
 
+    # device_uplinks_df = device_uplinks_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
+    device_uplinks_df = device_uplinks_df.join(device_loc_df, on='dev_eui')
+    device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
+
+    # return index columns to DF columns
+    device_uplinks_df = device_uplinks_df.reset_index()
     device_loc_df = device_loc_df.reset_index()
 
     # if gateway locations are provided (talking to you ran-bridge), then add gw_location to device_gw_df
@@ -171,9 +174,15 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         'join_seqs',
         'frame_first',
         'frame_last',
+        'name',
+        'lat',
+        'long',
+        'marker',
+        'address',
         'tag1',
         'tag2',
         'pluscode'
+
     ]
     device_uplinks_cols = [col for col in device_uplinks_cols if col in device_uplinks_df.columns]
 

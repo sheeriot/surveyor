@@ -13,7 +13,7 @@ import pandas as pd
 import redis
 
 from surveyor.settings import TIME_ZONE
-from device.models import BucketDevice
+# from device.models import BucketDevice
 
 
 @login_required
@@ -60,9 +60,12 @@ def bucketDevicesDetails(request):
                                                      unit='ms').dt.tz_localize(zulu_tz)
     device_uplinks_df['frame_last'] = device_uplinks_df['frame_last'].dt.tz_convert(local_tz)
 
-    # find all dev_eui in device.BucketDevice
-    devices_withloc = list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
+    # reconstitute the device_locs_df
+    device_loc_json = redis_client.get(f'{task_id}:device_loc_df')
+    device_loc_dict = json.loads(device_loc_json)
+    device_loc_df = pd.DataFrame(device_loc_dict)
 
+    devices_withloc = list(device_loc_df['dev_eui'])
     devices_seen = list(device_uplinks_df['dev_eui'])
     devices_missing = set(devices_withloc) - set(devices_seen)
 
@@ -74,11 +77,6 @@ def bucketDevicesDetails(request):
         'missing': len(devices_missing),
         'noloc': len(devices_noloc)
     }
-
-    # reconstitute the device_locs_df
-    device_loc_json = redis_client.get(f'{task_id}:device_loc_df')
-    device_loc_dict = json.loads(device_loc_json)
-    device_loc_df = pd.DataFrame(device_loc_dict)
 
     devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
 
