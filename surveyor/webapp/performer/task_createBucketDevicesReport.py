@@ -142,9 +142,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
             device_loc_df['lat'] = device_loc_df['lat'].round(6)
             device_loc_df['long'] = device_loc_df['long'].round(6)
 
-    ic(device_loc_df.info())
     if device_loc_df is not None and not device_loc_df.empty:
-        ic('device_loc_df is not None and not empty')
+
         device_uplinks_df = device_uplinks_df.join(device_loc_df, on='dev_eui')
         device_gw_df = device_gw_df.join(device_loc_df[['lat', 'long']], on='dev_eui')
 

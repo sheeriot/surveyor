@@ -117,7 +117,7 @@ def bucketDevicesDetails(request):
         'device_gw_df': device_gw_df,
         'device_counts': device_counts,
     }
-    if not devices_missing_df.empty:
+    if devices_missing_df:
         context['devices_missing'] = devices_missing_df
 
     report_details_html = render_to_string('performer/bucketDevicesDetails.html', context)
