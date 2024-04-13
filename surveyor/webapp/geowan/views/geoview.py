@@ -4,10 +4,12 @@ from django.utils import timezone
 
 import dateutil.parser
 import dateutil.tz
+from zoneinfo import ZoneInfo
+
 from time import perf_counter
 
 import pandas as pd
-# from icecream import ic
+from icecream import ic
 
 import folium
 
@@ -30,10 +32,12 @@ def geoView(request, deveui='', **kwargs):
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
 
+    # timezone stuff
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
     else:
         tz = TIME_ZONE
+    timezone.activate(tz)
     zulu_tz = dateutil.tz.gettz('UTC')
     local_tz = dateutil.tz.gettz(tz)
 
@@ -42,6 +46,8 @@ def geoView(request, deveui='', **kwargs):
 
     if request.method == 'GET' and 'submit' in request.GET:
         form = geoViewSelect(request.GET, orgs_list=orgs_list)
+        # ic('processing get+submit')
+        # ic(form.data['start'])
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
@@ -67,6 +73,7 @@ def geoView(request, deveui='', **kwargs):
             return render(request, 'geowan/geoView.html', context)
 
     elif request.method == 'GET' and kwargs:
+        # ic('processing get with kwargs')
         if 'start_mark' in kwargs:
             start_mark = kwargs.pop('start_mark')
             start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
@@ -111,7 +118,7 @@ def geoView(request, deveui='', **kwargs):
             return render(request, 'geowan/geoView.html', context)
 
     elif request.method == 'GET':
-
+        # ic('processing bare GET')
         yesterday_morning, now = init_datetime(tz)
         form = geoViewSelect(
             initial={
@@ -127,9 +134,11 @@ def geoView(request, deveui='', **kwargs):
         return render(request, 'geowan/geoView.html', context)
 
     # ------ being here means we have a valid form ------
-    start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
-    end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
 
+    start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
+    # ic(start_mark)
+    end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
+    # ic(end_mark)
     context = {
         'form': form,
         'start': start,
@@ -250,8 +259,8 @@ def geoView(request, deveui='', **kwargs):
 
         # first the RSSI markers
         for index, row in frame_stats.iterrows():
-            if 'dist' in row:
-                dist_txt = "Distance:{row['dist']:.2f}km<br>"
+            if not pd.isna(row['dist']):
+                dist_txt = f"Distance:{row['dist']:.2f}km<br>"
             else:
                 dist_txt = ''
 
@@ -307,8 +316,8 @@ def geoView(request, deveui='', **kwargs):
         snr_gw_group = folium.FeatureGroup(F"{gateway} - SNR")
         # SNR Markers
         for index, row in frame_stats.iterrows():
-            if 'dist' in row:
-                dist_txt = "Distance:{row['dist']:.2f}km<br>"
+            if not pd.isna(row['dist']):
+                dist_txt = f"Distance:{row['dist']:.2f}km<br>"
             else:
                 dist_txt = ''
             snr_gw_group.add_child(folium.CircleMarker(
@@ -356,8 +365,8 @@ def geoView(request, deveui='', **kwargs):
     best_rssi_makers = folium.FeatureGroup("Best - RSSI")
     # RSSI Markers
     for index, row in frames_df.iterrows():
-        if 'dist' in row:
-            dist_txt = "Distance:{row['dist']:.2f}km<br>"
+        if not pd.isna(row['dist']):
+            dist_txt = f"Distance:{row['dist']:.2f}km<br>"
         else:
             dist_txt = ''
         best_rssi_makers.add_child(folium.CircleMarker(
@@ -379,8 +388,8 @@ def geoView(request, deveui='', **kwargs):
     best_snr_makers = folium.FeatureGroup("Best - SNR")
     # SNR Markers
     for index, row in frames_df.iterrows():
-        if 'dist' in row:
-            dist_txt = "Distance:{row['dist']:.2f}km<br>"
+        if not pd.isna(row['dist']):
+            dist_txt = f"Distance:{row['dist']:.2f}km<br>"
         else:
             dist_txt = ''
         best_snr_makers.add_child(folium.CircleMarker(

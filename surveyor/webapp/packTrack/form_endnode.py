@@ -33,12 +33,21 @@ class endNodeSelect(forms.Form):
         )
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get("start")
+        end = cleaned_data.get("end")
+        if start and end and start >= end:
+            raise forms.ValidationError("Start date must be before end date.")
+        return cleaned_data
+
     def __init__(self, *args, **kwargs):
         self.orgs_list = kwargs.pop('orgs_list', None)
         super(endNodeSelect, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper(self)
-        self.helper.form_method = "GET"
+        self.helper.form_method = 'get'
+        self.helper.form_action = 'packGraph'
 
         self.fields["endnode"].queryset = EndNode.objects.filter(
             surveyor_org__in=self.orgs_list

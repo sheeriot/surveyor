@@ -65,10 +65,15 @@ def bucketDevicesDetails(request):
     device_loc_dict = json.loads(device_loc_json)
     device_loc_df = pd.DataFrame(device_loc_dict)
 
-    devices_withloc = list(device_loc_df['dev_eui'])
     devices_seen = list(device_uplinks_df['dev_eui'])
-    devices_missing = set(devices_withloc) - set(devices_seen)
-
+    if device_loc_df.empty:
+        devices_withloc = []
+        devices_missing = []
+        devices_missing_df = pd.DataFrame()
+    else:
+        devices_withloc = list(device_loc_df['dev_eui'])
+        devices_missing = set(devices_withloc) - set(devices_seen)
+        devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
     devices_noloc = set(devices_seen) - set(devices_withloc)
 
     device_counts = {
@@ -77,8 +82,6 @@ def bucketDevicesDetails(request):
         'missing': len(devices_missing),
         'noloc': len(devices_noloc)
     }
-
-    devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
 
     # rename some columns for tighter tables
     device_uplinks_df = device_uplinks_df.rename(
@@ -110,10 +113,12 @@ def bucketDevicesDetails(request):
         'start_mark': start_mark,
         'end_mark': end_mark,
         'device_loc_df': device_loc_df,
-        'devices_missing_df': devices_missing_df,
         'device_uplinks_df': device_uplinks_df,
         'device_gw_df': device_gw_df,
         'device_counts': device_counts,
     }
+    if not devices_missing_df.empty:
+        context['devices_missing'] = devices_missing_df
+
     report_details_html = render_to_string('performer/bucketDevicesDetails.html', context)
     return HttpResponse(report_details_html)

@@ -1,13 +1,16 @@
 from django import forms
 from django.forms import DateTimeInput
+# from django.core.exceptions import ValidationError
+# from pytz import NonExistentTimeError
 from device.models import EndNode
+
 # from icecream import ic
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div, Button, ButtonHolder, Field
 
 
-class selectForm(forms.Form):
+class endNodeSelect(forms.Form):
 
     endnode = forms.ModelChoiceField(queryset=None, help_text="LoRaWAN End Device")
     start = forms.DateTimeField(
@@ -30,15 +33,24 @@ class selectForm(forms.Form):
         )
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get("start")
+        end = cleaned_data.get("end")
+        if start and end and start >= end:
+            raise forms.ValidationError("Start date must be before end date.")
+        return cleaned_data
+
     def __init__(self, *args, **kwargs):
         self.orgs_list = kwargs.pop('orgs_list', None)
-        super(selectForm, self).__init__(*args, **kwargs)
+        super(endNodeSelect, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper(self)
-        self.helper.form_method = "GET"
+        self.helper.form_method = 'get'
+        self.helper.form_action = 'heatIndex'
 
         self.fields["endnode"].queryset = EndNode.objects.filter(
-            surveyororg=self.orgs_list
+            surveyor_org__in=self.orgs_list
         ).order_by("surveyor_org", "name")
 
         self.helper.layout = Layout(

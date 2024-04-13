@@ -34,10 +34,12 @@ def bucketviewgw(request, source_id='', **kwargs):
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
 
+    # timezone stuff
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
     else:
         tz = TIME_ZONE
+    timezone.activate(tz)
     zulu_tz = dateutil.tz.gettz('UTC')
     local_tz = dateutil.tz.gettz(tz)
 
@@ -127,10 +129,11 @@ def bucketviewgw(request, source_id='', **kwargs):
         }
         return render(request, 'performer/bucketviewgw.html', context)
 
-    # start processing
+    # ==================================
+    # start processing results
 
-    start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
-    end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
+    start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
+    end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
 
     # Start building the context
     context = {

@@ -18,7 +18,7 @@ from .climatefun import getInfluxClimateData
 
 from device.models import EndNode
 from accounts.models import Person
-from packTrack.form_endnode import endNodeSelect
+from .form_heatindex import endNodeSelect
 
 
 @login_required
@@ -27,10 +27,12 @@ def heatIndex(request, **kwargs):
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
 
+    # timezone stuff
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
     else:
         tz = TIME_ZONE
+    timezone.activate(tz)
     zulu_tz = dateutil.tz.gettz('UTC')
     local_tz = dateutil.tz.gettz(tz)
 
@@ -134,8 +136,8 @@ def heatIndex(request, **kwargs):
 
 # ------ being here means we have a valid form ------
 
-    start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
-    end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
+    start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
+    end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
 
     context = {
         'form': form,

@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
-import pytz
+# import pytz
+from zoneinfo import ZoneInfo
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -36,16 +37,17 @@ def graphSetUp(width=8, height=5):
 
 
 def init_datetime(tz):
-    now = datetime.now(pytz.timezone(tz))
+    now = datetime.now()
+    ic(now.astimezone(ZoneInfo(tz)))
     yesterday = now - timedelta(1)
     yesterday_formatted = yesterday.strftime("%Y-%m-%dT00:00")
     current_time = now.strftime("%Y-%m-%dT%H:%M")
-    # print(current_time)
     return (yesterday_formatted, current_time)
 
 
 def init_datetime_daysago(tz, days_ago):
-    now = datetime.now(pytz.timezone(tz))
+    ic(tz)
+    now = datetime.now()
     begindate = now - timedelta(days_ago)
     begindate = begindate.strftime("%Y-%m-%dT00:00")
     current_time = now.strftime("%Y-%m-%dT%H:%M")
