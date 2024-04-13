@@ -18,7 +18,7 @@
   </tr>
 </table>
 
-{% if devices_missing_df %}
+{% if not devices_missing_df.empty %}
 <div id="devices-missing"></div>
 <h3>Devices Missing</h3>
 <table id="devices-missing-table" class="table table-striped table-bordered .table-fixed w-auto">
@@ -33,8 +33,8 @@
   </tbody>
   </table>
 </div>
-
 {% endif %}
+
 <div id="device-uplinks">
 <h3>Device Uplinks</h3>
 <ul><li><a href="#top">goto Top</a></li></ul>

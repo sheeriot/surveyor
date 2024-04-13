@@ -73,7 +73,7 @@ def bucketDevicesDetails(request):
     else:
         devices_withloc = list(device_loc_df['dev_eui'])
         devices_missing = set(devices_withloc) - set(devices_seen)
-        devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
+        devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
     devices_noloc = set(devices_seen) - set(devices_withloc)
 
     device_counts = {
@@ -116,9 +116,8 @@ def bucketDevicesDetails(request):
         'device_uplinks_df': device_uplinks_df,
         'device_gw_df': device_gw_df,
         'device_counts': device_counts,
+        'devices_missing_df': devices_missing_df
     }
-    if devices_missing_df:
-        context['devices_missing'] = devices_missing_df
 
     report_details_html = render_to_string('performer/bucketDevicesDetails.html', context)
     return HttpResponse(report_details_html)
