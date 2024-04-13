@@ -13,7 +13,7 @@ import redis
 import json
 import folium
 
-# from icecream import ic
+from icecream import ic
 
 from celery.result import AsyncResult
 from device.models import InfluxSource, BucketDevice
@@ -29,6 +29,7 @@ def bucketDevicesMaps(request):
     """
     This function takes in the device summary dataframe and the device gateway dataframe and returns a folium map.
     """
+
     task_id = request.GET.get('task_id', None)
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
@@ -90,7 +91,7 @@ def bucketDevicesMaps(request):
         else:
             devices_withloc = list(device_loc_df['dev_eui'])
             devices_missing = set(devices_withloc) - set(devices_seen)
-            devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
+            devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
 
     else:
         # pass task.state as report_status if NOT SUCCESS
@@ -362,23 +363,24 @@ def bucketDevicesMaps(request):
         ))
     successrate_layer.add_to(map_one)
 
-    missingdevices_layer = folium.FeatureGroup("Missing Devices")
-    for index, row in devices_missing_df.iterrows():
-        missingdevices_layer.add_child(folium.CircleMarker(
-            location=(row['lat'], row['long']),
-            radius=5,
-            popup=f"""
-                DevEUI: {row['dev_eui']}<br>
-                Marker: {row['marker']}<br>
-                Address: {row['address']}<br>
-                """,
+    if not devices_missing_df.empty:
+        missingdevices_layer = folium.FeatureGroup("Missing Devices")
+        for index, row in devices_missing_df.iterrows():
+            missingdevices_layer.add_child(folium.CircleMarker(
+                location=(row['lat'], row['long']),
+                radius=5,
+                popup=f"""
+                    DevEUI: {row['dev_eui']}<br>
+                    Marker: {row['marker']}<br>
+                    Address: {row['address']}<br>
+                    """,
 
-            color='black',
-            fill=True,
-            fill_color='black',
-            fill_opacity=0.7,
-        ))
-    missingdevices_layer.add_to(map_one)
+                color='black',
+                fill=True,
+                fill_color='black',
+                fill_opacity=0.7,
+            ))
+        missingdevices_layer.add_to(map_one)
 
     folium.LayerControl().add_to(map_one)
 
