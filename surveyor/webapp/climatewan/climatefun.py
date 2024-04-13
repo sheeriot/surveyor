@@ -34,7 +34,7 @@ def getInfluxClimateData(source_id, meas, dev_eui, start, end):
         append_flag = False
         df_list = influx_pdf
         columns_set = set([col for df in df_list for col in df.columns])
-        frames_df = pd.empty()
+        frames_df = pd.DataFrame()
         for df in df_list:
             missing_cols = columns_set - set(df.columns)
             df = df.reindex(columns=df.columns.tolist() + list(missing_cols))

@@ -52,7 +52,7 @@ def getBucketData(source_id, meas, start_mark, end_mark):
         append_flag = False
         df_list = influx_pdf
         columns_set = set([col for df in df_list for col in df.columns])
-        frames_df = pd.empty()
+        frames_df = pd.DataFrame()
         for pdf in df_list:
             missing_cols = columns_set - set(pdf.columns)
             pdf = pdf.reindex(columns=pdf.columns.tolist() + list(missing_cols))

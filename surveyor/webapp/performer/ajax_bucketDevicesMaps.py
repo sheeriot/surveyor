@@ -1,5 +1,4 @@
 from django.contrib.auth.decorators import login_required
-# from django.shortcuts import render
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -85,14 +84,13 @@ def bucketDevicesMaps(request):
         device_loc_dict = json.loads(device_loc_json)
         device_loc_df = pd.DataFrame(device_loc_dict)
 
-        # find all dev_eui in device.BucketDevice, all seen, and missing list
-        # devices_withloc =
-        #       list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
-        devices_withloc = list(device_loc_df['dev_eui'])
         devices_seen = list(device_uplinks_df['dev_eui'])
-        devices_missing = set(devices_withloc) - set(devices_seen)
-        # create a DF for mapping missing
-        devices_missing_df = device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]
+        if device_loc_df.empty:
+            devices_withloc = []
+        else:
+            devices_withloc = list(device_loc_df['dev_eui'])
+            devices_missing = set(devices_withloc) - set(devices_seen)
+            devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
 
     else:
         # pass task.state as report_status if NOT SUCCESS

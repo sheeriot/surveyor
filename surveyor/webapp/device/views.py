@@ -46,10 +46,12 @@ def bucketdevice(request, **kwargs):
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
 
+    # timezone stuff
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
     else:
         tz = TIME_ZONE
+    timezone.activate(tz)
     zulu_tz = dateutil.tz.gettz('UTC')
     local_tz = dateutil.tz.gettz(tz)
 

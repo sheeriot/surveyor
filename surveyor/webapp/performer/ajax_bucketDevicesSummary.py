@@ -64,15 +64,16 @@ def bucketDevicesSummary(request):
         device_loc_dict = json.loads(device_loc_json)
         device_loc_df = pd.DataFrame(device_loc_dict)
 
-        # find all dev_eui in device.BucketDevice, all seen, and missing list
-        # devices_withloc =
-        #           list(BucketDevice.objects.values_list('dev_eui', flat=True).filter(influx_source=source_id))
-        devices_withloc = list(device_loc_df['dev_eui'])
         devices_seen = list(device_uplinks_df['dev_eui'])
-        devices_missing = set(devices_withloc) - set(devices_seen)
-
+        if device_loc_df.empty:
+            devices_withloc = []
+            devices_missing = []
+        else:
+            devices_withloc = list(device_loc_df['dev_eui'])
+            devices_missing = set(devices_withloc) - set(devices_seen)
+            # devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
         devices_noloc = set(devices_seen) - set(devices_withloc)
-
+        
         device_counts = {
             'withloc': len(devices_withloc),
             'seen': len(devices_seen),
