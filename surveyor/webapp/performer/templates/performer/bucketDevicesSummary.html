@@ -1,3 +1,5 @@
+{% load static %}
+
 <hr>
 <div id="device-counts">
 <h3>Device Counts</h3>
@@ -15,6 +17,10 @@
     <td>{{ device_counts.noloc }}</td>
   </tr>
 </table>
+
+<div class="d-flex justify-content-left" >
+  <img src="{% static 'bucketfoundmissing.png' %}" />
+</div>
 
 <hr>
 <h4>Summary Table</h4>
