@@ -6,7 +6,7 @@ import json
 from time import perf_counter
 import pandas as pd
 
-from icecream import ic
+# from icecream import ic
 
 from device.models import BucketDevice
 from device.locate import pluscode2latlon

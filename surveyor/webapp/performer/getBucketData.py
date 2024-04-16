@@ -3,11 +3,11 @@
 import pandas as pd
 import dateutil.parser
 import dateutil.tz
-# from time import perf_counter
+from time import perf_counter
 
 from influxdb_client import InfluxDBClient
 from device.models import InfluxSource
-# from icecream import ic
+from icecream import ic
 
 
 def getBucketData(source_id, meas, start_mark, end_mark):
@@ -32,21 +32,21 @@ def getBucketData(source_id, meas, start_mark, end_mark):
                     "spreading_factor","rssi","snr","frequency","gw_latitude","gw_longitude",
                     "tag1","tag2","pluscode"])
         '''
-    # start_timer = perf_counter()
+    start_timer = perf_counter()
     with InfluxDBClient(
                         url=influx_url,
                         token=source.influx_token,
                         org=source.influx_org,
-                        timeout=(5000, 20000)
+                        timeout=(5000, 60000)
                         ) as client:
         try:
             influx_pdf = client.query_api().query_data_frame(org=source.influx_org, query=influx_query)
         except Exception as e:
             report_status = F'Failed: {e}'
             return report_status, pd.DataFrame()
-    # stop_timer = perf_counter()
-    # query_time = round(stop_timer - start_timer,1)
-
+    stop_timer = perf_counter()
+    query_time = round(stop_timer - start_timer,1)
+    ic(query_time)
     # this normalizes the list into a DF by adding missing columns and appending
     if type(influx_pdf) is list:
         append_flag = False
