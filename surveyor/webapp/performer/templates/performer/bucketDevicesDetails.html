@@ -1,8 +1,10 @@
 {% load dataframe_template_tags %}
+<div id="report-details">
+  <h3>Report Details</h3>
+</div>
 
-<hr>
 <div id="device-counts">
-<h3>Device Counts</h3>
+<h4>Device Counts</h4>
 <table class="table table-striped table-bordered w-auto">
   <tr>
     <th>Locations</th>
@@ -19,9 +21,22 @@
 </table>
 
 {% if not devices_missing_df.empty %}
+<hr>
 <div id="devices-missing"></div>
-<h3>Devices Missing</h3>
-<table id="devices-missing-table" class="table table-striped table-bordered .table-fixed w-auto">
+<h4>Devices Missing</h4>
+<div class="row row-cols-auto">
+  <div class="col">
+    <a class="btn btn-rounded btn-success btn-sm" href="#">
+      <i class="bi bi-arrow-90deg-up"></i> Top
+    </a>
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('devices-missing-table');">
+      <i class="bi bi-file-spreadsheet"></i> Download CSV
+    </button>
+  </div>
+</div>
+<table id="devices-missing-table" class="table table-striped table-bordered .table-fixed w-auto caption-top">
   <caption>Devices Missing - Location but not Seen</caption>
   <thead>
     {{ devices_missing_df | convert_data_frame_to_html_table_headers | safe}}
@@ -35,8 +50,9 @@
 </div>
 {% endif %}
 
+<hr>
 <div id="device-uplinks">
-<h3>Device Uplinks</h3>
+<h4>Device Uplinks</h4>
 <ul><li><a href="#top">goto Top</a></li></ul>
 Notes:
 <ul>

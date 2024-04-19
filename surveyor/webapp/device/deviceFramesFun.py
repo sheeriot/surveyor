@@ -24,8 +24,8 @@ def device_summ_frames(frames_df):
     # add columns - missed (uplinks), tgap (time between uplinks),
     device_uplinks_df['missed'] = device_uplinks_df.groupby(['device_addr'], observed=True)['counter_up'].diff()-1
     # fill sequence start (na) with 0, set to integer
-    device_uplinks_df['missed'] = device_uplinks_df['missed'].fillna(0).astype('int')
-    device_uplinks_df['tgap'] = device_uplinks_df['time'].diff().round('s')
+    device_uplinks_df['missed'] = device_uplinks_df['missed'].fillna(0).astype('Int64')
+    device_uplinks_df['tgap'] = device_uplinks_df['time'].diff().dt.seconds.astype('Int64')
 
     device_uplinks_df = device_uplinks_df.sort_values(["device_addr", "counter_up"])
     device_uplinks_df = device_uplinks_df.set_index(['device_addr', 'counter_up'])

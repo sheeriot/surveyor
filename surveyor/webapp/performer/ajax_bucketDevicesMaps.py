@@ -13,7 +13,7 @@ import redis
 import json
 import folium
 
-from icecream import ic
+# from icecream import ic
 
 from celery.result import AsyncResult
 from device.models import InfluxSource, BucketDevice
@@ -61,9 +61,9 @@ def bucketDevicesMaps(request):
         redis_client = redis.Redis(host='redis', port=6379, db=0)
 
         # reconstitute the dataframes from redis
-        gw_loc_json = redis_client.get(f'{task_id}:gw_loc_df')
-        gw_loc_dict = json.loads(gw_loc_json)
-        gw_loc_df = pd.DataFrame(gw_loc_dict)
+        gw_info_json = redis_client.get(f'{task_id}:gw_info_df')
+        gw_info_dict = json.loads(gw_info_json)
+        gw_info_df = pd.DataFrame(gw_info_dict)
 
         device_uplinks_json = redis_client.get(f'{task_id}:device_uplinks_df')
         device_uplinks_dict = json.loads(device_uplinks_json)
@@ -126,14 +126,13 @@ def bucketDevicesMaps(request):
 
     device_uplinks_df = device_uplinks_df.set_index('dev_eui')
 
-    # copy gw_loc_df to gw_info_df
-    gw_info_df = gw_loc_df.copy().set_index('gateway')
+    gw_info_df = gw_info_df.set_index('gateway')
 
     # create an indexed Pandas series on gateway
     devices_per_gateway = device_gw_df.groupby('gateway')['dev_eui'].nunique().astype(int)
     gw_info_df['devices'] = gw_info_df.index.map(devices_per_gateway)
 
-    context['gw_info_df'] = gw_info_df.reset_index().sort_values('devices', ascending=False)
+    # context['gw_info_df'] = gw_info_df.reset_index().sort_values('devices', ascending=False)
 
     # add some color
     device_uplinks_df['uplinks_pdr_color'] = device_uplinks_df['uplinks_pdr'].apply(lambda x:
@@ -342,7 +341,7 @@ def bucketDevicesMaps(request):
     # Packet Delivery Rate aka Uplinks Success Rate
     # only map devices with locations
     device_successmap_df = device_uplinks_df.dropna(subset=['lat', 'long'])
-    successrate_layer = folium.FeatureGroup("Uplink Frame Success Rate")
+    successrate_layer = folium.FeatureGroup("Packet Delivery Ratio")
     for index, row in device_successmap_df.iterrows():
         successrate_layer.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),

@@ -41,11 +41,11 @@
 <div>
     {% crispy form form.helper %}
 </div>
+<hr>
 <div style="clear:both" id="console-messages" class="row p-1 mb-1 mx-0 bg-light">
   <p class="mb-0 text-black-75">Messages:
   {{ console_messages }}</p>
 </div>
-<hr>
 {% block error_message %}
 {% if error_message %}
 <hr>
@@ -61,7 +61,8 @@
     <ul class="list-group list-group-horizontal-sm">
         <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
         <li class="list-group-item"><a href="#devices-pdr">Packet Delivery Ratios</a></li>
-        <li class="list-group-item"><a href="#devices-maps">Device Maps</a></li>
+        <li class="list-group-item"><a href="#devices-maps">Uplink Performance Map</a></li>
+        <li class="list-group-item"><a href="#gateway-report">Gateways Report</a></li>
         <li class="list-group-item">
             <a href="#report-details">Report Details</a> :
             <a href="#device-uplinks">Device Uplinks</a> :
@@ -72,13 +73,16 @@
 
 <div id="summary-table">
 </div>
-
+<hr>
 <div id="devices-pdr">
 </div>
-
+<hr>
 <div id="devices-maps">
 </div>
-
+<hr>
+<div id="gateway-info">
+</div>
+<hr>
 <div id="report-details">
 </div>
 
@@ -92,7 +96,7 @@
     var devices_pdr = $('#devices-pdr');
     var devices_maps = $('#devices-maps');
     var report_details = $('#report-details');
-
+    var gw_info = $('#gateway-info');
 
 
     get_task_info(taskid);
@@ -129,15 +133,18 @@
                         summary_table.html('<hr><div class="spinner-border text-primary" role="status"></div>Summary Table...');
                         devices_pdr.html('<hr><div class="spinner-border text-primary" role="status"></div>Graphing PDR...');
                         devices_maps.html('<hr><div class="spinner-border text-primary" role="status"></div>Mapping Devices...');
+                        gw_info.html('<hr><div class="spinner-border text-success" role="status"></div>Loading Details...');
                         report_details.html('<hr><div class="spinner-border text-success" role="status"></div>Loading Details...');
                         get_bucket_devices_summary(tid);
                         get_bucket_devices_pdr(tid);
                         get_bucket_devices_maps(tid);
+                        get_bucket_devices_gwinfo(tid);
                         get_bucket_devices_details(tid);
                     } else {
                         summary_table.html('Task Failed!' + data.state);
                         devices_pdr.html('No PDR');
                         device_maps.html('No Maps');
+                        gw_info.html('No Gateway Info');
                         report_details.html('No Details');
                     }
                 }
@@ -183,6 +190,19 @@
             },
             error: function (data) {
                 devices_maps.html('Mapping Error!' + alert(data));
+            }
+        });
+    }
+    function get_bucket_devices_gwinfo(tid) {
+        $.ajax({
+            type: 'get',
+            url: '/performer/bucketDevicesGwInfo/',
+            data: {'task_id': tid},
+            success: function (data) {
+                gw_info.html(data);
+            },
+            error: function (data) {
+                gw_info.html('GwInfo Error!' + alert(data));
             }
         });
     }
