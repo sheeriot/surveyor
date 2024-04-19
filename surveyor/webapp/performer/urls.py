@@ -8,9 +8,10 @@ from .view_bucketDevicesReport import bucketDevicesReport
 # ajax parts
 from .ajax_bucketDevicesSummary import bucketDevicesSummary
 from .ajax_bucketDevicesMaps import bucketDevicesMaps
+from .ajax_bucketDevicesGwInfo import bucketDevicesGwInfo
 from .ajax_bucketDevicesDetails import bucketDevicesDetails
 from .ajax_bucketDevicesPdr import bucketDevicesPdr
-# from .ajax_bucketDevicesMaps import bucketDevicesMapTwo
+
 
 urlpatterns = [
     # Task checker
@@ -27,6 +28,7 @@ urlpatterns = [
     path('bucketDevicesSummary/', bucketDevicesSummary, name='bucketDevicesSummary'),
     path('bucketDevicesPdr/', bucketDevicesPdr, name='bucketDevicesPdr'),
     path('bucketDevicesMaps/', bucketDevicesMaps, name='bucketDevicesMaps'),
+    path('bucketDevicesGwInfo/', bucketDevicesGwInfo, name='bucketDevicesGwInfo'),
     # path('bucketDevicesMapTwo/', bucketDevicesMapTwo, name='bucketDevicesMapTwo'),
     path('bucketDevicesDetails/', bucketDevicesDetails, name='BucketDevicesDetails'),
 ]

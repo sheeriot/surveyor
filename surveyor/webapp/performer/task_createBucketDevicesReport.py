@@ -6,16 +6,15 @@ import json
 from time import perf_counter
 import pandas as pd
 
-# from icecream import ic
-
 from device.models import BucketDevice
 from device.locate import pluscode2latlon
 
 from .getBucketData import getBucketData
 from surveyor.utils import geoDistance
 
+# from icecream import ic
 
-# Add an additional blank line before the decorator
+
 @shared_task
 def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     task_id = current_task.request.id
@@ -30,20 +29,38 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     if report_status == "Empty":
         return report_status, {}
 
-    # is gateway location provided (talking to you ran-bridge)
+    # create the gateway info table, starting with GPS location for each gateway
     if 'gw_latitude' in frames_df.columns and 'gw_longitude' in frames_df.columns:
-        gw_loc_df = frames_df[['gateway', 'gw_latitude', 'gw_longitude']] \
+        gw_info_df = frames_df[['gateway', 'gw_latitude', 'gw_longitude']] \
             .drop_duplicates() \
             .dropna() \
             .reset_index(drop=True)
-        gw_loc_df = gw_loc_df.drop_duplicates(subset=['gateway'])
-        gw_loc_df = gw_loc_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
+        # only one location per gateway in case of GPS change
+        gw_info_df = gw_info_df.drop_duplicates(subset=['gateway'])
+        gw_info_df = gw_info_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
     else:
         # create a blank dataframe for return - No Locations for Gateways!
-        gw_loc_df = pd.DataFrame()
+        gw_info_df = pd.DataFrame()
+    gw_info_df = gw_info_df.set_index('gateway')
+
+    # add frame count per gateway
+    gw_framecount_df = frames_df.groupby(['gateway'],
+                                         observed=False).size().to_frame("frames")
+    gw_info_df = gw_info_df.join(gw_framecount_df)
+    gw_info_df = gw_info_df.sort_values('frames', ascending=False).reset_index()
+
+    # new table, frames per gateway per frequency counts
+    gw_freqs_df = frames_df.groupby(['gateway', 'frequency'],
+                                    observed=False).size().to_frame("frames")
+    gw_freqs_df = gw_freqs_df.reset_index().pivot(index='gateway', columns='frequency', values='frames')
+    
+    gw_freqs_df = gw_freqs_df.join(gw_framecount_df)
+
+    count_col = gw_freqs_df.pop('frames')
+    gw_freqs_df.insert(0, 'frames', count_col)
+    gw_freqs_df = gw_freqs_df.sort_values('frames', ascending=False).reset_index()
 
     # capture the Tag1/Tag2 for each device
-
     tag_cols = [col for col in frames_df.columns if col.startswith('tag')]
     # add the dev_eui to the head of tag_cols
     tag_cols.insert(0, 'dev_eui')
@@ -152,9 +169,9 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     device_loc_df = device_loc_df.reset_index()
 
     # if gateway locations are provided (talking to you ran-bridge), then add gw_location to device_gw_df
-    if 'gateway' in gw_loc_df.columns:
-        gw_loc_df2 = gw_loc_df.set_index('gateway').add_prefix('gw_')
-        device_gw_df = device_gw_df.join(gw_loc_df2, on='gateway')
+    if 'gateway' in gw_info_df.columns:
+        gw_info_df2 = gw_info_df.set_index('gateway').add_prefix('gw_')
+        device_gw_df = device_gw_df.join(gw_info_df2, on='gateway')
 
     # this just checks the columns exist
     got_coords = all(ele in device_gw_df for ele in ['lat', 'long', 'gw_lat', 'gw_long'])
@@ -212,7 +229,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     device_gw_cols = [col for col in device_gw_cols if col in device_gw_df.columns]
     device_gw_df = device_gw_df[device_gw_cols]
 
-    # add the Totals to Redis
+    # create the Totals to Redis
     totals_dict = {}
 
     totals_dict['device_count'] = device_uplinks_df.shape[0]
@@ -227,11 +244,13 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     totals_dict['device_uplinks_memsize'] = int(device_uplinks_df.memory_usage(deep=True).sum())
     totals_dict['device_gw_memsize'] = int(device_gw_df.memory_usage(deep=True).sum())
     totals_dict['query_time'] = query_time
+
     # Connect to Redis
     redis_client = redis.Redis(host='redis', port=6379, db=0)
-
+    # store results to redis
     redis_client.setex(f'{task_id}:totals_dict', 3600, json.dumps(totals_dict))
-    redis_client.setex(f'{task_id}:gw_loc_df', 3600, gw_loc_df.to_json())
+    redis_client.setex(f'{task_id}:gw_freqs_df', 3600, gw_freqs_df.to_json())
+    redis_client.setex(f'{task_id}:gw_info_df', 3600, gw_info_df.to_json())
     redis_client.setex(f'{task_id}:device_loc_df', 3600, device_loc_df.to_json())
     redis_client.setex(f'{task_id}:device_uplinks_df', 3600, device_uplinks_df.to_json())
     redis_client.setex(f'{task_id}:device_gw_df', 3600, device_gw_df.to_json())

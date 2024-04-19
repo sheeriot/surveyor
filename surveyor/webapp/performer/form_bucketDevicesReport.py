@@ -116,8 +116,7 @@ class bucketDevicesForm(forms.Form):
                                 css_id="end-btn-holder",
                                 css_class="d-inline col-auto",
                             ),
-                        ),
-                        Div(
+                            HTML('<br><b>Recent:</b>'),
                             Button(
                                 "last hour",
                                 "last hour",
@@ -142,7 +141,6 @@ class bucketDevicesForm(forms.Form):
                     ),
                 ),
                 Row(
-                    HTML('<hr>'),
                     Submit("submit", "Submit", css_class="mt-3 btn-primary w-25"),
                 ),
             )
