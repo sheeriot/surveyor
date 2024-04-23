@@ -15,6 +15,7 @@ docker-compose.override.yml
 # ENV files should not be in version control
 .env
 django.env
+*.env
 
 # Python Virtual Environments
 venv
