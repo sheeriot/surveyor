@@ -41,12 +41,11 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         append_flag = False
         df_list = influx_pdf
         columns_set = set([col for df in df_list for col in df.columns])
-        # ic(columns_set)
+  
         frames_df = pd.DataFrame()
         for df in df_list:
-            # ic(df.shape[0])
+     
             missing_cols = columns_set - set(df.columns)
-            # ic(missing_cols)
             df = df.reindex(columns=df.columns.tolist() + list(missing_cols))
             if append_flag:
                 frames_df = pd.concat([frames_df, df], axis=0)
@@ -55,7 +54,6 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
                 append_flag = True
         influx_pdf = frames_df.reset_index(drop=True)
 
-    # ic(influx_pdf.info())
     if influx_pdf.empty:
         raise ValueError(F"Dataframe is Empty - check measurement name: {meas}")
 
@@ -103,10 +101,9 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         'frequency': 'category',
         'bw_k': 'category',
         'gateway': 'category',
-        'spreading_factor': 'category',
+        # 'spreading_factor': 'category',
     })
     # if the columns exist, set them first as integers (floats do weird things.)
-    # ic(influx_pdf.info())
     # Cast columns to integer type, ignoring NA values
 
     if 'frame_size' in frames_df.columns:

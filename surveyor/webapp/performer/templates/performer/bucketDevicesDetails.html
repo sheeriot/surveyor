@@ -57,8 +57,9 @@
 Notes:
 <ul>
   <li>pdr is Packet Delivery Rate, aka Uplinks Success Rate</li>
-  <li>total is total number of uplinks seen from the device</li>
-  <li>received is total number of uplinks received from that device</li>
+  <li>total is total number of uplinks accounted (received and missed) from the device</li>
+  <li>received is total number of unique uplinks received from that device</li>
+  <li>frames is the number of uplinks frames received across all gateways (includes duplicates) </li>
   <li>missed is derived from gaps in the uplink counter sequence, not all missed frames can be counted</li>
 
   <li>devices that repeat Uplink Counter due to non-Confirmed messages will skew results - see frame viewer</li>

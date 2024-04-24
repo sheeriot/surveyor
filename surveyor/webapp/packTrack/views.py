@@ -9,7 +9,7 @@ import dateutil.tz
 from surveyor.settings import TIME_ZONE
 from .form_endnode import endNodeSelect
 from accounts.models import Person
-from surveyor.utils import graphSetUp, getGraph, init_datetime
+from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 from device.models import EndNode
 from device.getDeviceData import getDeviceFrames
 from device.deviceFramesFun import device_summ_frames
@@ -120,7 +120,7 @@ def packGraph(request, deveui='', **kwargs):
 
     elif request.method == 'GET':
 
-        yesterday_morning, now = init_datetime(tz)
+        yesterday_morning, now = init_datetime_daysago(tz, 1)
         form = endNodeSelect(
             initial={
                 'start': yesterday_morning,

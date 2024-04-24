@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
-# import pytz
+
 from zoneinfo import ZoneInfo
 import pandas as pd
 
@@ -14,7 +14,7 @@ from icecream import ic
 def geoDistance(lat1, long1, lat2, long2):
     if any([pd.isnull(lat1), pd.isnull(long1), pd.isnull(lat2), pd.isnull(long2)]):
         return None
-    # ic(pd.isnull(lat1), type(long1), lat2, long2)
+ 
     dist = round(geodesic((lat1, long1), (lat2, long2)).km, 3)
     return dist
 
@@ -36,22 +36,20 @@ def graphSetUp(width=8, height=5):
     plt.rcParams['figure.figsize'] = (width, height)
 
 
-def init_datetime(tz):
-    now = datetime.now()
-    ic(now.astimezone(ZoneInfo(tz)))
-    yesterday = now - timedelta(1)
-    yesterday_formatted = yesterday.strftime("%Y-%m-%dT00:00")
-    current_time = now.strftime("%Y-%m-%dT%H:%M")
-    return (yesterday_formatted, current_time)
+# def init_datetime(tz):
+#     now = datetime.now().astimezone(ZoneInfo(tz))
+#     yesterday = now - timedelta(1)
+#     yesterday_formatted = yesterday.astimezone(ZoneInfo(tz)).strftime("%Y-%m-%dT00:00")
+#     current_time = now.astimezone(ZoneInfo(tz)).strftime("%Y-%m-%dT%H:%M")
+#     return (yesterday_formatted, current_time)
 
 
 def init_datetime_daysago(tz, days_ago):
-    ic(tz)
-    now = datetime.now()
-    begindate = now - timedelta(days_ago)
-    begindate = begindate.strftime("%Y-%m-%dT00:00")
-    current_time = now.strftime("%Y-%m-%dT%H:%M")
-    return (begindate, current_time)
+    now = datetime.now().astimezone(ZoneInfo(tz))
+    begin_time = now - timedelta(days_ago)
+    begin_time = begin_time.strftime("%Y-%m-%dT00:00")
+    current_time = now.astimezone(ZoneInfo(tz)).strftime("%Y-%m-%dT%H:%M")
+    return (begin_time, current_time)
 
 
 def computed_rssi(rssi, snr):
