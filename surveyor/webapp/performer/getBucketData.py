@@ -104,7 +104,7 @@ def getBucketData(source_id, meas, start_mark, end_mark):
         'frequency': 'category',
         'bandwidth': 'category',
         'gateway': 'category',
-        'spreading_factor': 'category',
+        # 'spreading_factor': 'category',
     })
     if 'datarate' in pdf.columns:
         pdf = pdf.astype({'datarate': 'category'})

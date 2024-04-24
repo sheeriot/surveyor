@@ -95,7 +95,7 @@ class bucketDevicesForm(forms.Form):
                                     onclick="calculateTime(this);",
                                 ),
                                 css_id="start-btn-holder",
-                                css_class="d-inline col-auto",
+                                css_class="d-inline",
                             ),
                         ),
                         Div(
@@ -130,14 +130,13 @@ class bucketDevicesForm(forms.Form):
                                 onclick="lastHours(this);",
                             ),
                         ),
-                        css_class="col-12 col-lg-6 col-md-8",
                     ),
                     Column(
                         "center_latitude",
                         "center_longitude",
                         "radius_km",
                         HTML('<p><strong>Optionally, provide a map center and marker rings!</strong></p>'),
-                        css_class="col-12 col-lg-4 col-md-6",
+                        css_class="col-md-3",
                     ),
                 ),
                 Row(

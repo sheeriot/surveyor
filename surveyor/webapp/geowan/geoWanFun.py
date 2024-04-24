@@ -13,7 +13,6 @@ def geodist(lat1, lon1, lat2, lon2):
 
 
 def geowanSummFrames(frames_df):
-    # ic(frames_df.info())
     if set(['latitude', 'longitude', 'gw_latitude', 'gw_longitude']).issubset(frames_df.columns):
         frames_df['distance'] = frames_df.apply(
             lambda x: geodist(x['latitude'],

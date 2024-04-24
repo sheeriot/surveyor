@@ -4,7 +4,7 @@ from django.utils import timezone
 
 import dateutil.parser
 import dateutil.tz
-from zoneinfo import ZoneInfo
+# from zoneinfo import ZoneInfo
 
 from time import perf_counter
 
@@ -14,7 +14,7 @@ from icecream import ic
 import folium
 
 from accounts.models import Person
-from surveyor.utils import init_datetime
+from surveyor.utils import init_datetime_daysago
 from surveyor.settings import TIME_ZONE
 from device.models import EndNode
 from performer.colorscales import color_lookup_red0, color_lookup_green0
@@ -46,8 +46,6 @@ def geoView(request, deveui='', **kwargs):
 
     if request.method == 'GET' and 'submit' in request.GET:
         form = geoViewSelect(request.GET, orgs_list=orgs_list)
-        # ic('processing get+submit')
-        # ic(form.data['start'])
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
@@ -73,7 +71,6 @@ def geoView(request, deveui='', **kwargs):
             return render(request, 'geowan/geoView.html', context)
 
     elif request.method == 'GET' and kwargs:
-        # ic('processing get with kwargs')
         if 'start_mark' in kwargs:
             start_mark = kwargs.pop('start_mark')
             start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
@@ -118,8 +115,8 @@ def geoView(request, deveui='', **kwargs):
             return render(request, 'geowan/geoView.html', context)
 
     elif request.method == 'GET':
-        # ic('processing bare GET')
-        yesterday_morning, now = init_datetime(tz)
+        yesterday_morning, now = init_datetime_daysago(tz, 1)
+        ic(now)
         form = geoViewSelect(
             initial={
                 'start': yesterday_morning,
@@ -136,9 +133,9 @@ def geoView(request, deveui='', **kwargs):
     # ------ being here means we have a valid form ------
 
     start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
-    # ic(start_mark)
     end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
-    # ic(end_mark)
+    ic(end_mark)
+
     context = {
         'form': form,
         'start': start,

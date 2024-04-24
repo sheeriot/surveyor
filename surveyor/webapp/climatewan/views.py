@@ -12,7 +12,7 @@ import matplotlib.dates as mdates
 import matplotlib as mpl
 
 from surveyor.settings import TIME_ZONE
-from surveyor.utils import getGraph, graphSetUp, init_datetime
+from surveyor.utils import getGraph, graphSetUp, init_datetime_daysago
 
 from .climatefun import getInfluxClimateData
 
@@ -114,7 +114,7 @@ def heatIndex(request, **kwargs):
 
     elif request.method == 'GET':
 
-        yesterday_morning, now = init_datetime(tz)
+        yesterday_morning, now = init_datetime_daysago(tz, 1)
         form = endNodeSelect(
             initial={
                 'start': yesterday_morning,

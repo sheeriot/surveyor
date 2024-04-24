@@ -108,6 +108,14 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     # Add the tags to the device_uplinks_df
     device_uplinks_df = device_uplinks_df.join(device_tags_df)
 
+    # but wait, there is more (thanks notebook)
+    sf_df = frames_df.groupby('dev_eui')['spreading_factor'].mean().round(1).to_frame('avg')
+    sf_summ_df = frames_df.groupby(['dev_eui','spreading_factor'], observed=False).size().to_frame("frames").reset_index()
+    sf_summ_df = sf_summ_df.pivot(index='dev_eui', columns='spreading_factor', values='frames').fillna(0).astype('int')
+    sf_df = sf_df.join(sf_summ_df).add_prefix('sf_')
+    # now add those DF columns to the device_uplinks_df
+    device_uplinks_df = device_uplinks_df.join(sf_df)
+
     if 'pluscode' in frames_df.columns:
         # all candidate pluscodes
         deveui_pluscode_df = frames_df[['dev_eui', 'pluscode']].drop_duplicates().dropna()
@@ -184,12 +192,19 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     device_uplinks_cols = [
         'dev_eui',
         'gateways',
+        'join_seqs',
         'uplinks_pdr',
         'uplinks_total',
         'uplinks_missed',
         'uplinks_received',
         'frames_received',
-        'join_seqs',
+        'sf_avg',
+        'sf_7',
+        'sf_8',
+        'sf_9',
+        'sf_10',
+        'sf_11',
+        'sf_12',
         'frame_first',
         'frame_last',
         'name',
@@ -200,7 +215,6 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         'tag1',
         'tag2',
         'pluscode'
-
     ]
     device_uplinks_cols = [col for col in device_uplinks_cols if col in device_uplinks_df.columns]
 

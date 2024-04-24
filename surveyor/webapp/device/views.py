@@ -13,7 +13,7 @@ from .getDeviceData import getDeviceFrames
 from .deviceFramesFun import device_summ_frames
 
 from accounts.models import Person
-from surveyor.utils import graphSetUp, getGraph, init_datetime
+from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 
 # from icecream import ic
 from time import perf_counter
@@ -134,7 +134,7 @@ def bucketdevice(request, **kwargs):
 
     elif request.method == 'GET':
 
-        yesterday_morning, now = init_datetime(tz)
+        yesterday_morning, now = init_datetime(tz, 1)
         form = bucketDeviceForm(
             initial={
                 'start': yesterday_morning,
