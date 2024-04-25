@@ -12,9 +12,9 @@ from device.models import InfluxSource
 from surveyor.utils import getGraph, init_datetime_daysago
 from surveyor.settings import TIME_ZONE
 
-from .forms import bucketviewGwForm
+# from .forms import bucketviewGwForm
 from .subbands import get_subbands
-from .getbucket import getBucketData
+from .getBucketData import getBucketData
 from .getstats import getGatewayStats
 
 import matplotlib.pyplot as plt

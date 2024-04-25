@@ -12,6 +12,7 @@ from .ajax_bucketDevicesGwInfo import bucketDevicesGwInfo
 from .ajax_bucketDevicesDetails import bucketDevicesDetails
 from .ajax_bucketDevicesPdr import bucketDevicesPdr
 
+from .views.popout_map import popoutMap
 
 urlpatterns = [
     # Task checker
@@ -23,6 +24,7 @@ urlpatterns = [
         bucketDevicesReport,
         name='bucketDevicesReport_withTime'
     ),
+    path('popoutMap/<task_id>/', popoutMap, name='popoutMap'),
 
     # AJAX Parts
     path('bucketDevicesSummary/', bucketDevicesSummary, name='bucketDevicesSummary'),

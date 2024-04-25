@@ -59,7 +59,7 @@ def bucketDevicesPdr(request):
 
     # Packet Delivery Ratio (PDR)
 
-    graphSetUp(width=10, height=6)
+    graphSetUp(width=10, height=4)
     bins = np.arange(0, 1.05, 0.05)
 
     # Creating the histogram
