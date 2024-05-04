@@ -29,7 +29,7 @@ def popoutMap(request, task_id=None):
     """
     This function takes in the device summary dataframe and the device gateway dataframe and returns a folium map.
     """
-    ic(task_id)
+    
     # task_id = request.GET.get('task_id', None)
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())

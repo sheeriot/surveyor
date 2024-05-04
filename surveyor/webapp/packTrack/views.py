@@ -23,7 +23,7 @@ import matplotlib as mpl
 import pandas as pd
 
 # =================
-# Create your views here.
+# packGraph View - Parse the Input Data First
 # =================
 
 
@@ -73,22 +73,31 @@ def packGraph(request, deveui='', **kwargs):
             }
             return render(request, 'packTrack/packGraph.html', context)
 
+    # got some kwargs from URL, but no submit button, process them
     elif request.method == 'GET' and kwargs:
-        if 'start_mark' in kwargs:
-            start_mark = kwargs.pop('start_mark')
-            start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
-            start = start_zulu.astimezone(local_tz)
-        if 'end_mark' in kwargs:
-            end_mark = kwargs.pop('end_mark')
-            end_zulu = dateutil.parser.parse(end_mark).replace(tzinfo=zulu_tz)
-            end = end_zulu.astimezone(local_tz)
+        start_default, end_default = init_datetime_daysago(tz, 3)
+
         if 'endnode_id' in kwargs:
             endnode_id = kwargs.pop('endnode_id')
             endnode = EndNode.objects.get(pk=endnode_id)
 
+        if 'start_mark' in kwargs:
+            start_mark = kwargs.pop('start_mark')
+            start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
+            start = start_zulu.astimezone(local_tz)
+        else:
+            start = start_default
+
+        if 'end_mark' in kwargs:
+            end_mark = kwargs.pop('end_mark')
+            end_zulu = dateutil.parser.parse(end_mark).replace(tzinfo=zulu_tz)
+            end = end_zulu.astimezone(local_tz)
+        else:
+            end = end_default
+
         form = endNodeSelect({
-            "endnode": endnode_id,
-            "start": start,
+            'endnode': endnode_id,
+            'start': start,
             'end': end},
             orgs_list=orgs_list
         )
@@ -120,11 +129,11 @@ def packGraph(request, deveui='', **kwargs):
 
     elif request.method == 'GET':
 
-        yesterday_morning, now = init_datetime_daysago(tz, 1)
+        start_default, end_default = init_datetime_daysago(tz, 3)
         form = endNodeSelect(
             initial={
-                'start': yesterday_morning,
-                'end': now},
+                'start': start_default,
+                'end': end_default},
             orgs_list=orgs_list
         )
         context = {

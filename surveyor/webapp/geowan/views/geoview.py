@@ -116,7 +116,6 @@ def geoView(request, deveui='', **kwargs):
 
     elif request.method == 'GET':
         yesterday_morning, now = init_datetime_daysago(tz, 1)
-        ic(now)
         form = geoViewSelect(
             initial={
                 'start': yesterday_morning,
@@ -134,7 +133,6 @@ def geoView(request, deveui='', **kwargs):
 
     start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
     end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
-    ic(end_mark)
 
     context = {
         'form': form,
