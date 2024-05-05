@@ -38,7 +38,7 @@
         <div class="col-1">
           <img src="{% static 'Surveyor03_50B.png' %}">
         </div>
-        <div class="col-1 text-center d-inline fw-bold lh-1 navbar-brand">
+        <div class="col-2 text-center d-inline fw-bold lh-1 navbar-brand">
           <div class="d-inline" style="color:#d92fe2">RF</div>
           <div class="d-inline" style="color:#bb31e0">Field</div>
           <br />
@@ -70,16 +70,58 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         {% if user.is_authenticated %}
-        <div class="collapse navbar-collapse col-6" id="navbarNavAltMarkup">
+        <div class="collapse navbar-collapse col-4" id="navbarNavAltMarkup">
           <div>
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                   aria-expanded="false">
-                  <div class="d-inline-block float-left">Devices</div>
+                  <div class="d-inline-block float-left">Bucket Devices</div>
                   <img src="{% static 'EndDeviceA02_25B.png' %}">
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li>
+                    <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">
+                      <img src="{% static 'BucketView1_200.png' %}" height="50" width="50">
+                      Bucket Report - Devices
+                    </a>
+                  </li>
+                  <!-- <div class="dropdown-divider"></div>
+                  <li>
+                       &gt; Beta reports
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">Bucket Devices Report</a>
+                  </li> -->
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <div class="navbar-nav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <div class="d-inline-block float-left">Device Tracker</div>
+                  <img src="{% static 'Satellite04_25B.png' %}">
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li>
+                    <a class="dropdown-item" href="{% url 'packGraph' %}">
+                      <img src="{% static 'PackTrack06_100.png' %}" height="50" width="43">
+                      Packet Graph
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{% url 'geoview' %}">
+                      <img src="{% static 'Compass02_100.png' %}" height="50" width="43">
+                      Geo Map
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{% url 'heatIndex' %}">
+                      <img src="{% static 'Thermometer02_100.jpg' %}" height="50" width="34"> Heat Index</a>
+                  </li>
                   <li>
                     <div class="d-inline-block float-left">
                       <a class="dropdown-item" href="{% url 'addEndNode' %}">
@@ -88,88 +130,26 @@
                       </a>
                     </div>
                   </li>
-                  <li>
-                    <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">
-                      <img src="{% static 'BucketView1_200.png' %}" height="50" width="50">
-                      Bucket Report - Devices
-                    </a>
-                  </li>
-                  <div class="dropdown-divider"></div>
-                  <li>
-                       &gt; Beta reports
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">Bucket Devices Report</a>
-                  </li>
                 </ul>
               </li>
             </ul>
           </div>
-          <div class="navbar-nav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <div class="d-inline-block float-left">PackTrack</div>
-                  <img src="{% static 'PackTrack06_25B.png' %}">
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li>
-                    <a class="dropdown-item" href="{% url 'packGraph' %}">
-                      <img src="{% static 'PackTrack06_100.png' %}" height="77" width="60">
-                      Packet Graph
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
+        </div>
+        <div class="col-1"></div>
+        <div class="col-2">
+          <div class="nav-item nav-link link-secondary d-flex align-items-center" aria-current="page">
+            {% bs_icon 'person-fill' color='green'%}
+            {{ user.username }}
           </div>
-          <div class="navbar-nav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <div class="d-inline-block float-left">GeoWAN</div>
-                  <img src="{% static 'Satellite04_25B.png' %}">
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li>
-                    <a class="dropdown-item" href="{% url 'geoview' %}">
-                      <img src="{% static 'Compass02_100.png' %}" height="50" width="43">
-                      GeoWAN - GeoView
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-          <div class="navbar-nav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <div class="d-inline-block float-left">ClimateWAN</div>
-                  <img src="{% static 'Thermometer03_25B.png' %}">
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li>
-                    <a class="dropdown-item" href="{% url 'heatIndex' %}">
-                      <img src="{% static 'Thermometer02_100.jpg' %}" height="50" width="34"> Heat Index</a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-          <div class="navbar-nav">
-            <a class="nav-item nav-link link-secondary d-flex align-items-center"
-              href="javascript:{document.getElementById('logout').submit()}" onclick="">
-              {% bs_icon 'box-arrow-right' color='red'%}
-              Logout
-            </a>
-            <form id="logout" method="POST" action="{% url 'logout' %}">
-              {% csrf_token %}
-              <input type="hidden" />
-            </form>
+          <a class="nav-item nav-link link-secondary d-flex align-items-center"
+            href="javascript:{document.getElementById('logout').submit()}" onclick="">
+            {% bs_icon 'box-arrow-right' color='red'%}
+            Logout
+          </a>
+          <form id="logout" method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <input type="hidden" />
+          </form>
           </div>
         </div>
         {% else %}

@@ -154,7 +154,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     # add the lat/long to the device_gw_df
     # only able to map devices with locations
     if 'pluscode' in device_uplinks_df.columns:
-        device_loc_df = device_uplinks_df[['dev_eui', 'pluscode']].copy().dropna()
+        device_loc_df = device_uplinks_df.reset_index()
+        device_loc_df = device_loc_df[['dev_eui', 'pluscode']].dropna()
         device_loc_df['lat'], device_loc_df['long'] = zip(*device_loc_df['pluscode'].apply(pluscode2latlon))
         device_loc_df = device_loc_df.drop(columns=['pluscode']).set_index('dev_eui')
 

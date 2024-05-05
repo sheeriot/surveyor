@@ -53,5 +53,7 @@ def init_datetime_daysago(tz, days_ago):
 
 
 def computed_rssi(rssi, snr):
+    if pd.isna(snr) or pd.isna(rssi):
+        return None
     computed_rssi = round(rssi + (snr <= -5) * snr + ((snr > -5) & (snr < 10)) * (snr / 3 - 10 / 3))
     return computed_rssi

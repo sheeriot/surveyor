@@ -9,7 +9,7 @@ import dateutil.tz
 from time import perf_counter
 
 import pandas as pd
-from icecream import ic
+# from icecream import ic
 
 import folium
 
@@ -116,7 +116,6 @@ def geoView(request, deveui='', **kwargs):
 
     elif request.method == 'GET':
         yesterday_morning, now = init_datetime_daysago(tz, 1)
-        ic(now)
         form = geoViewSelect(
             initial={
                 'start': yesterday_morning,
@@ -134,7 +133,6 @@ def geoView(request, deveui='', **kwargs):
 
     start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
     end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
-    ic(end_mark)
 
     context = {
         'form': form,
@@ -180,7 +178,13 @@ def geoView(request, deveui='', **kwargs):
     # Summarize the frames into device_uplinks_df
     frames_df, uplinks_df = geowanSummFrames(frames_df)
 
-    context['gps_uplinks'] = uplinks_df.shape[0]
+    # Create a new column 'new_uplinks' by mapping another column
+    if 'dist' in frames_df:
+        frames_df['dist_txt'] = frames_df['dist'].map(lambda d: f"Distance:{d:.2f}km<br>")
+    else:
+        frames_df['dist_txt'] = ''
+
+    context['gps_uplinks'] = frames_df.shape[0]
 
     # Summarize the Gateway Location Table
     context['gateway_count'] = frames_df.gateway.nunique()
@@ -249,17 +253,13 @@ def geoView(request, deveui='', **kwargs):
         except KeyError:
             gw_lat, gw_long = None, None
             gw_loc = False
-        frame_stats = frame_stats.reset_index()
+        frame_stats = frame_stats.reset_index(drop=True)
 
         # first the RSSI markers
         rssi_gw_group = folium.FeatureGroup(F"{gateway} - RSSI")
 
         # first the RSSI markers
         for index, row in frame_stats.iterrows():
-            if not pd.isna(row['dist']):
-                dist_txt = f"Distance:{row['dist']:.2f}km<br>"
-            else:
-                dist_txt = ''
 
             rssi_gw_group.add_child(folium.CircleMarker(
                 location=(row['lat'], row['long']),
@@ -269,7 +269,7 @@ def geoView(request, deveui='', **kwargs):
                     Count:{ row['count'] }<br>
                     RSSI:<strong>{row['rssi']}</strong>,
                     SNR:{row['snr']}<br>
-                    {dist_txt}
+                    { row['dist_txt'] }
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['rssi_color'],
@@ -313,19 +313,15 @@ def geoView(request, deveui='', **kwargs):
         snr_gw_group = folium.FeatureGroup(F"{gateway} - SNR")
         # SNR Markers
         for index, row in frame_stats.iterrows():
-            if not pd.isna(row['dist']):
-                dist_txt = f"Distance:{row['dist']:.2f}km<br>"
-            else:
-                dist_txt = ''
             snr_gw_group.add_child(folium.CircleMarker(
                 location=(row['lat'], row['long']),
                 radius=10,
                 popup=f"""
                     GW:{ row['gateway'] }<br>
                     Count:{ row['count'] }<br>
-                    RSSI:{row['rssi']},
-                    SNR:<strong>{row['snr']}</strong><br>
-                    {dist_txt}
+                    RSSI:{ row['rssi'] },
+                    SNR:<strong>{ row['snr']}</strong><br>
+                    { row['dist_txt'] }
                     { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
                 """,
                 color=row['snr_color'],
@@ -362,17 +358,14 @@ def geoView(request, deveui='', **kwargs):
     best_rssi_makers = folium.FeatureGroup("Best - RSSI")
     # RSSI Markers
     for index, row in frames_df.iterrows():
-        if not pd.isna(row['dist']):
-            dist_txt = f"Distance:{row['dist']:.2f}km<br>"
-        else:
-            dist_txt = ''
+
         best_rssi_makers.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
                 Count:{ row['count']} ({ row['addr'] })<br>
-                RSSI:<strong>{row['rssi']}</strong>,SNR:{row['snr']}<br>
-                {dist_txt}
+                RSSI:<strong>{ row['rssi'] }</strong>,SNR:{ row['snr'] }<br>
+                { row['dist_txt'] }
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['rssi_color'],
@@ -385,17 +378,14 @@ def geoView(request, deveui='', **kwargs):
     best_snr_makers = folium.FeatureGroup("Best - SNR")
     # SNR Markers
     for index, row in frames_df.iterrows():
-        if not pd.isna(row['dist']):
-            dist_txt = f"Distance:{row['dist']:.2f}km<br>"
-        else:
-            dist_txt = ''
+
         best_snr_makers.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),
             radius=10,
             popup=f"""
-                Count:{ row['count']} ({ row['addr'] })<br>
-                RSSI:{row['rssi']},SNR:<strong>{row['snr']}</strong><br>
-                {dist_txt}
+                Count:{ row['count'] } ({ row['addr'] })<br>
+                RSSI:{ row['rssi'] },SNR:<strong>{ row['snr'] }</strong><br>
+                { row['dist_txt'] }
                 { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
             """,
             color=row['snr_color'],

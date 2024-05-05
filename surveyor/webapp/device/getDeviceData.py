@@ -1,5 +1,5 @@
 # from time import perf_counter
-# from icecream import ic
+from icecream import ic
 from influxdb_client import InfluxDBClient
 from .models import InfluxSource
 import pandas as pd
@@ -73,24 +73,23 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     # take a copy sorted by time
     frames_df = influx_pdf.copy().reset_index(drop=True).sort_values(by=['rx_time'])
 
-    # work on the time fields
+    # Saved fields are always UTC. Make it timezone aware
+    # using rx_time for a new field "time"
     frames_df['time'] = pd.to_datetime(frames_df['rx_time'], unit='s').dt.tz_localize('UTC')
-    # _time and rx_time are UTC
-    # frames_df['_time'] = pd.to_datetime(frames_df['_time']).dt.tz_localize('UTC')
-    # rename column _time to time
-
+    # dump the old time fields
     frames_df = frames_df.drop(columns=['_time', 'rx_time'])
 
+    # drop the zeros in bandwidth
     frames_df['bandwidth'] = frames_df['bandwidth'] / 1000
     frames_df = frames_df.rename(columns={'bandwidth': 'bw_k'})
     frames_df['bw_k'] = frames_df['bw_k'].astype('int')
 
+    # drop stupid floating point crud (digits)
     frames_df['snr'] = frames_df['snr'].round(1)
 
     # rename column bandwidth to bw_k
     frames_df = frames_df.astype({
         'counter_up': 'int',
-        'bw_k': 'int',
         'spreading_factor': 'int',
         'rssi': 'int',
         'frequency': 'string',
@@ -101,11 +100,11 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         'frequency': 'category',
         'bw_k': 'category',
         'gateway': 'category',
-        # 'spreading_factor': 'category',
+        # 'spreading_factor': 'category', # keep it as integer for calculations
     })
     # if the columns exist, set them first as integers (floats do weird things.)
-    # Cast columns to integer type, ignoring NA values
 
+    # Cast frame_size or payload_size columns to Int64 type, which happily works with NA values
     if 'frame_size' in frames_df.columns:
         frames_df = frames_df.astype({
             'frame_size': 'Int64'
@@ -114,6 +113,7 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         frames_df = frames_df.astype({
             'payload_size': 'Int64'
         })
+    # Change the DataRate to Integers, then a category
     if 'datarate' in frames_df.columns:
         frames_df = frames_df.astype({
             'datarate': 'int'
