@@ -38,7 +38,7 @@
         <div class="col-1">
           <img src="{% static 'Surveyor03_50B.png' %}">
         </div>
-        <div class="col-1 text-center d-inline fw-bold lh-1 navbar-brand">
+        <div class="col-2 text-center d-inline fw-bold lh-1 navbar-brand">
           <div class="d-inline" style="color:#d92fe2">RF</div>
           <div class="d-inline" style="color:#bb31e0">Field</div>
           <br />
@@ -70,7 +70,7 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         {% if user.is_authenticated %}
-        <div class="collapse navbar-collapse col-6" id="navbarNavAltMarkup">
+        <div class="collapse navbar-collapse col-4" id="navbarNavAltMarkup">
           <div>
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item dropdown">
@@ -86,13 +86,13 @@
                       Bucket Report - Devices
                     </a>
                   </li>
-                  <div class="dropdown-divider"></div>
+                  <!-- <div class="dropdown-divider"></div>
                   <li>
                        &gt; Beta reports
                   </li>
                   <li>
                     <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">Bucket Devices Report</a>
-                  </li>
+                  </li> -->
                 </ul>
               </li>
             </ul>
@@ -135,6 +135,7 @@
             </ul>
           </div>
         </div>
+        <div class="col-1"></div>
         <div class="col-2">
           <div class="nav-item nav-link link-secondary d-flex align-items-center" aria-current="page">
             {% bs_icon 'person-fill' color='green'%}

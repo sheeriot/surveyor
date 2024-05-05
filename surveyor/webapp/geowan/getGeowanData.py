@@ -1,5 +1,5 @@
 # from time import perf_counter
-from icecream import ic
+# from icecream import ic
 from influxdb_client import InfluxDBClient
 from device.models import InfluxSource
 import pandas as pd
@@ -68,6 +68,7 @@ def getGeowanFrames(source_id, meas, dev_eui, start, end):
         raise ValueError(F"No Result/Table: {meas}")
 
     # prune to only GPS_Valid Frames
+    influx_pdf['gps_valid'] = influx_pdf['gps_valid'].fillna(False)
     influx_pdf = influx_pdf[influx_pdf['gps_valid']]
     if influx_pdf.empty:
         raise ValueError("No Valid GPS Frames!")

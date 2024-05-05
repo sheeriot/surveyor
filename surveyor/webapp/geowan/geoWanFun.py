@@ -13,6 +13,8 @@ def geodist(lat1, lon1, lat2, lon2):
 
 
 def geowanSummFrames(frames_df):
+    # ic(frames_df.info())
+    # ic(frames_df.head(5))
     if set(['latitude', 'longitude', 'gw_latitude', 'gw_longitude']).issubset(frames_df.columns):
         frames_df['distance'] = frames_df.apply(
             lambda x: geodist(x['latitude'],
@@ -24,6 +26,7 @@ def geowanSummFrames(frames_df):
     # computed rssi
     frames_df['rssi_c'] = frames_df.apply(lambda x: computed_rssi(x['rssi'], x['snr']), axis=1)
 
+    # uplinks_df is a summary dataframe
     uplinks_df = frames_df.groupby(["device_addr", "counter_up"], as_index=False).agg(
         time=pd.NamedAgg(column="time", aggfunc="min"),
         hits=pd.NamedAgg(column="counter_up", aggfunc="count"),
@@ -36,8 +39,12 @@ def geowanSummFrames(frames_df):
     ordered_addrs = uplinks_df.sort_values(["time"])["device_addr"].unique()
     uplinks_df["device_addr"] = pd.Categorical(uplinks_df["device_addr"], categories=ordered_addrs)
     uplinks_df = uplinks_df.sort_values(["device_addr", "counter_up"])
+
+    # suddenly the uplinks_df has two indices
     uplinks_df = uplinks_df.set_index(['device_addr', 'counter_up'])
-    # move common fields from frames_df to device_uplinks_df
+
+    # =====================================================
+    #  move common columns from frames_df to uplinks_df
     xfer_cols = [
         'device_addr', 'counter_up',
         'bandwidth', 'frequency', 'spreading_factor',
@@ -45,14 +52,13 @@ def geowanSummFrames(frames_df):
         'latitude', 'longitude', 'gps_status',
         'message_type', 'tag1', 'tag2', 'pluscode'
     ]
-
     xfer_cols = [col for col in xfer_cols if col in frames_df.columns]
     xfer_df = pd.DataFrame(frames_df, columns=xfer_cols)
     xfer_df = xfer_df.drop_duplicates(subset=['device_addr', 'counter_up'])
     xfer_df = xfer_df.set_index(['device_addr', 'counter_up'])
     uplinks_df = uplinks_df.join(xfer_df, how='inner').reset_index()
 
-    # =================
+    # ============================
     # cleanup uplink columns order
     uplink_cols = [
         'device_addr', 'counter_up', 'time', 'hits',
@@ -65,10 +71,11 @@ def geowanSummFrames(frames_df):
     uplink_cols = [col for col in uplink_cols if col in uplinks_df.columns]
     uplinks_df = uplinks_df[uplink_cols]
 
+    # ---
     uplinks_df['bandwidth'] = uplinks_df['bandwidth'].astype('int') / 1000
-    uplinks_df['bandwidth'] = uplinks_df['bandwidth'].astype('int')
     uplinks_df = uplinks_df.rename(columns={'bandwidth': 'bw_k'})
 
+    # ---
     # rename some column name for narrower display
     uplinks_df = uplinks_df.rename(
         columns={
