@@ -30,6 +30,17 @@
   </tbody>
   </table>
 </div>
+  {% if device_counts %}
+  <hr>
+  <h4>Gateway Device Counts</h4>
+  <div id="gw_device_counts">
+    <div class="text-center">
+      <img src="data:image/png;base64, {{ device_counts|safe }}">
+    </div>
+  </div>
+  {% else %}
+    <p>No Gateway Device Counts Chart</p>
+  {% endif %}
 {% else %}
 <div>
 <h4>No Gateway Info</h4>
@@ -47,7 +58,6 @@
 {% else %}
   <p>No Frequencies Bar Chart</p>
 {% endif %}
-
 
 {% if gw_freq_bars %}
   <hr>
