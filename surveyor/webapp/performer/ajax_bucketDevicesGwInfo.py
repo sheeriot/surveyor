@@ -1,4 +1,5 @@
 # from time import perf_counter
+import numpy as np
 import pandas as pd
 import redis
 import json
@@ -53,14 +54,43 @@ def bucketDevicesGwInfo(request):
         'report_status': report_status,
     }
 
-    # Set the gw_info_df index
     gw_info_df = gw_info_df.set_index('gateway')
 
     # create an indexed Pandas series on gateway
     devices_per_gateway = device_gw_df.groupby('gateway')['dev_eui'].nunique().astype(int)
-    gw_info_df['devices'] = gw_info_df.index.map(devices_per_gateway)
-
+    gw_info_df = gw_info_df.join(devices_per_gateway)
+    gw_info_df = gw_info_df.rename(columns={'dev_eui': 'devices'})
+    # pass gw_info_df to context for template
     context['gw_info_df'] = gw_info_df.reset_index().sort_values('devices', ascending=False)
+
+    # now some graphs
+    gw_device_counts = gw_info_df[['devices']].sort_values(['devices']).reset_index()
+
+    x = gw_device_counts['gateway']
+    y = gw_device_counts['devices']
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    fig.set_figwidth(14)
+
+    width = 0.75  # the width of the bars
+    ind = np.arange(len(y))  # the x locations for the groups
+    bar_plot = ax.barh(ind, y, width, color="green", align='edge')
+    ax.set_yticks(ind+width/2)
+    ax.set_yticklabels(x, minor=False)
+
+    def autolabel(bar_plot):
+        for idx, rect in enumerate(bar_plot):
+            ax.text(0.25, idx+.25, y[idx], color='white')
+    autolabel(bar_plot)
+
+    plt.margins(0, 0.05)
+    plt.title('Devices per Gateway')
+    plt.ylabel('Gateway')
+
+    # plt.show()
+    device_counts = getGraph()
+
+    context['device_counts'] = device_counts
 
     context['gw_freqs_df'] = gw_freqs_df
     gw_freqs_df = gw_freqs_df.set_index('gateway')
@@ -95,7 +125,7 @@ def bucketDevicesGwInfo(request):
         plt.ylabel("Count")
         plt.ylim(0, max_yaxis)
         gw_freq_bars.append(getGraph())
-    
+
     context['gw_freq_bars'] = gw_freq_bars
 
     rendered = render_to_string('performer/bucketDevicesGwInfo.html', context)
