@@ -2,8 +2,10 @@
 {% if pdr_hist %}
   <div id="pdr_hist">
     <div class="text-center">
+      <caption><strong>{{ uplinks_one }}</strong> devices had only 1 (one) uplink seen, and are removed from this graph.</caption>
       <img src="data:image/png;base64, {{ pdr_hist|safe }}">
     </div>
+
   </div>
 {% else %}
   <p>No PDR Histogram Available</p>

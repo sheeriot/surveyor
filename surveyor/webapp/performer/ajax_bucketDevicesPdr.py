@@ -63,7 +63,14 @@ def bucketDevicesPdr(request):
     bins = np.arange(0, 1.05, 0.05)
 
     # Creating the histogram
-    counts, edges, bars = plt.hist(device_uplinks_df['uplinks_pdr'],
+
+    uplinks_one = (device_uplinks_df['uplinks_total'] == 1).sum()
+    context["uplinks_one"] = uplinks_one
+
+    pdr_graph_df = device_uplinks_df[device_uplinks_df['uplinks_total'] > 1]
+
+
+    counts, edges, bars = plt.hist(pdr_graph_df['uplinks_pdr'],
                                    bins=bins,
                                    edgecolor='black',
                                    align='mid',
@@ -71,7 +78,7 @@ def bucketDevicesPdr(request):
 
     plt.bar_label(bars)
 
-    plt.xlabel('Uplink - Packet Delivery Ratio (PDF)')
+    plt.xlabel('Uplinks - Packet Delivery Ratio (PDF)')
     plt.ylabel('Devices')
     plt.title('Packet Delivery Ratio (PDR) Distribution')
     plt.grid(True)
@@ -82,6 +89,7 @@ def bucketDevicesPdr(request):
     pdr_hist = getGraph()
 
     context["pdr_hist"] = pdr_hist
+    plt.close()
 
     rendered = render_to_string('performer/bucketDevicesPdr.html', context)
 
