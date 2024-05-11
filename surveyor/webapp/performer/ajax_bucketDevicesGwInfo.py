@@ -107,6 +107,7 @@ def bucketDevicesGwInfo(request):
 
     freqs_bar = getGraph()
     context["freqs_bar"] = freqs_bar
+    plt.close()
 
     # put all gateway graphs on same Y limit
 
@@ -125,6 +126,7 @@ def bucketDevicesGwInfo(request):
         plt.ylabel("Count")
         plt.ylim(0, max_yaxis)
         gw_freq_bars.append(getGraph())
+        plt.close()
 
     context['gw_freq_bars'] = gw_freq_bars
 

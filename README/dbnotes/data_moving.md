@@ -13,7 +13,7 @@ This dumps all the tables (models) in the **device** app.
 
 ### Dump one table at a time
 
-Follow this sampel to backup your five surveyor database tables as YAML:
+Follow this sample to backup your five surveyor database tables as YAML:
 
 ```bash
     1  ./manage.py dumpdata auth.user --format=yaml > xfer/out/users.yaml
