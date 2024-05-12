@@ -29,7 +29,7 @@ def popoutMap(request, task_id=None):
     """
     This function takes in the device summary dataframe and the device gateway dataframe and returns a folium map.
     """
-    
+
     # task_id = request.GET.get('task_id', None)
     if timezone.get_current_timezone():
         tz = str(timezone.get_current_timezone())
@@ -68,6 +68,8 @@ def popoutMap(request, task_id=None):
         device_uplinks_json = redis_client.get(f'{task_id}:device_uplinks_df')
         device_uplinks_dict = json.loads(device_uplinks_json)
         device_uplinks_df = pd.DataFrame(device_uplinks_dict)
+        # ic(device_uplinks_df.info())
+
         # fix the timestamps
         device_uplinks_df['frame_first'] = pd.to_datetime(device_uplinks_df['frame_first'],
                                                           unit='ms').dt.tz_localize(zulu_tz)
@@ -202,15 +204,13 @@ def popoutMap(request, task_id=None):
     # # Connect to Redis to save gateway/device stats
     # redis_client = redis.Redis(host='redis', port=6379, db=0)
 
-    top_gateways = (device_gw_df.groupby('gateway')
-                    .size().nlargest(5).index.tolist()
-                    )  # Change '5' to the desired number of top gateways
+    top_gateways = (device_gw_df.groupby('gateway').size().nlargest(10).index.tolist())
 
-    towers_layer = folium.FeatureGroup("Gateways")
+    towers_layer = folium.FeatureGroup(name="Gateways", control=False)
     # lines should be an form option
     lines = True
     if lines:
-        lines_layer = folium.FeatureGroup("Uplink Lines")
+        lines_layer = folium.FeatureGroup(name="Uplink Lines", show=False)
 
     for gateway, device_gw_stats in device_gw_df.groupby('gateway'):
 
@@ -226,9 +226,11 @@ def popoutMap(request, task_id=None):
         if gw_loc:
             towers_layer.add_child(folium.Marker(
                 location=[gateway_lat, gateway_long],
-                icon=folium.DivIcon(f"""{tower_icon}"""),
-                popup=f"Gateway: {gateway}\n \
-                    {gateway_lat}, {gateway_long}"
+                icon=folium.DivIcon(f"""{ tower_icon }<br>{ gateway }"""),
+                tooltip=f"""
+                Gateway: {gateway}<br>
+                {gateway_lat}, {gateway_long}"
+                """
                 ))
 
         # show all lines possible on one layer
@@ -279,59 +281,60 @@ def popoutMap(request, task_id=None):
 
         if gateway in top_gateways:
             # create rssi and snr layers for each top 5 gateway
-            gw_rssi_layer = folium.FeatureGroup(F"{gateway} - RSSI mean")
-            gw_snr_layer = folium.FeatureGroup(F"{gateway} - SNR mean")
+            gw_rssi_layer = folium.FeatureGroup(name=F"{gateway} - RSSI mean", show=False)
+            # gw_snr_layer = folium.FeatureGroup(name=F"{gateway} - SNR mean", show=False)
 
             #
             device_gw_stats = device_gw_stats.reset_index().dropna(subset=['lat', 'long'])
             for index, row in device_gw_stats.iterrows():
-                gw_rssi_layer.add_child(folium.CircleMarker(
-                    location=(row['lat'], row['long']),
-                    radius=5,
-                    popup=f" \
-                        D:{row['dev_eui']}<br> \
-                        -----------------------<br> \
-                        RSSI Mean: {row['rssi_mean']:.0f} <br>\
-                        SNR Mean: {row['snr_mean']:.1f}<br> \
-                        Received: {row['frame_count']} of {row['uplinks_total']}",
-                    color=row['rssi_color'],
-                    fill=True,
-                    fill_color=row['rssi_color'],
-                    fill_opacity=1,
-                    )
-                )
-                gw_snr_layer.add_child(folium.CircleMarker(
-                    location=(row['lat'], row['long']),
-                    radius=5,
-                    popup=f" \
-                        D:{row['dev_eui']}<br> \
-                        -----------------------<br> \
-                        RSSI Mean: {row['rssi_mean']:.0f} <br>\
-                        SNR Mean: {row['snr_mean']:.1f}<br> \
-                        Received: {row['frame_count']} of {row['uplinks_total']}",
-                    color=row['snr_color'],
-                    fill=True,
-                    fill_color=row['snr_color'],
-                    fill_opacity=1,
-                    )
-                )
-            # if there is a gateway location, add it to both gateway maps SNR and RSSI
-            if gw_loc:
+                popup = F"""
+                    G:{ gateway }<br>
+                    D:{ row['dev_eui'] }<br>
+                    -----------------------<br>
+                    RSSI: { row['rssi_mean'] } (s:{ row['rssi_std'] })<br>
+                    SNR Mean: { row['snr_mean'] } (s:{ row['snr_std'] })<br>
+                    Received: { row['frame_count'] } of { row['uplinks_total'] }
+                """
                 gw_rssi_layer.add_child(folium.Marker(
-                    location=[gateway_lat, gateway_long],
-                    icon=folium.DivIcon(f"""{tower_icon}"""),
-                    popup=f"Gateway: { gateway }\n \
-                        {round(gateway_lat,5)},{round(gateway_long,5)}"
+                    location=(row['lat'], row['long']),
+                    popup=popup,
+                    icon=folium.Icon(
+                        icon='circle',
+                        prefix='fa',
+                        icon_color=row['rssi_color']
                     )
-                )
-                gw_snr_layer.add_child(folium.Marker(
-                    location=[gateway_lat, gateway_long],
-                    icon=folium.DivIcon(f"""{tower_icon}"""),
-                    popup=f"Gateway: { gateway }\n \
-                        {round(gateway_lat,5)},{round(gateway_long,5)}"
-                    )
-                )
-            gw_snr_layer.add_to(popout_map)
+                ))
+                # gw_snr_layer.add_child(folium.Marker(
+                #     location=(row['lat'], row['long']),
+                #     popup=f" \
+                #         D:{row['dev_eui']}<br> \
+                #         -----------------------<br> \
+                #         RSSI Mean: {row['rssi_mean']:.0f} <br>\
+                #         SNR Mean: {row['snr_mean']:.1f}<br> \
+                #         Received: {row['frame_count']} of {row['uplinks_total']}",
+                #     icon=folium.Icon(
+                #         icon='circle',
+                #         prefix='fa',
+                #         icon_color=row['snr_color']
+                #     )
+                # ))
+            # if there is a gateway location, add it to both gateway maps SNR and RSSI
+            # if gw_loc:
+            #     gw_rssi_layer.add_child(folium.Marker(
+            #         location=[gateway_lat, gateway_long],
+            #         icon=folium.DivIcon(f"""{tower_icon}"""),
+            #         popup=f"Gateway: { gateway }\n \
+            #             {round(gateway_lat,5)},{round(gateway_long,5)}"
+            #         )
+            #     )
+                # gw_snr_layer.add_child(folium.Marker(
+                #     location=[gateway_lat, gateway_long],
+                #     icon=folium.DivIcon(f"""{tower_icon}"""),
+                #     popup=f"Gateway: { gateway }\n \
+                #         {round(gateway_lat,5)},{round(gateway_long,5)}"
+                #     )
+                # )
+            # gw_snr_layer.add_to(popout_map)
             gw_rssi_layer.add_to(popout_map)
 
     # add towers layer
@@ -341,26 +344,47 @@ def popoutMap(request, task_id=None):
     # Packet Delivery Rate aka Uplinks Success Rate
     # only map devices with locations
     device_successmap_df = device_uplinks_df.dropna(subset=['lat', 'long'])
+    # map devices with uplinks_total > 1
     successrate_layer = folium.FeatureGroup("Packet Delivery Ratio")
-    for index, row in device_successmap_df.iterrows():
+    for index, row in device_successmap_df[device_successmap_df['uplinks_total'] > 1].iterrows():
         successrate_layer.add_child(folium.CircleMarker(
             location=(row['lat'], row['long']),
             radius=5,
+            color=row['uplinks_pdr_color'],
+            fill=True,
+            fill_color=row['uplinks_pdr_color'],
+            fill_opacity=0.7,
             popup=f"""
                 D:{index}<br>
                 -----------------------<br>
                 Uplinks Received: {row['uplinks_received']}<br>
                 Uplinks Missed: {row['uplinks_missed']}<br>
                 Uplinks Total: {row['uplinks_total']}<br>
-                Uplinks PDR: {row['uplinks_pdr']*100:.1f}%
+                Uplinks PDR: {row['uplinks_pdr']*100:.1f}%<br>
+                Gateways: {row['gateways']}
                 """,
-
-            color=row['uplinks_pdr_color'],
-            fill=True,
-            fill_color=row['uplinks_pdr_color'],
-            fill_opacity=1,
         ))
     successrate_layer.add_to(popout_map)
+
+    singles_layer = folium.FeatureGroup("Single Uplinks")
+    for index, row in device_successmap_df[device_successmap_df['uplinks_total'] == 1].iterrows():
+        singles_layer.add_child(folium.CircleMarker(
+            location=(row['lat'], row['long']),
+            radius=5,
+            color='indianred',
+            fill=True,
+            fill_color='indianred',
+            fill_opacity=0.7,
+            popup=f"""
+                D:{index}<br>
+                ----Single Uplinks --<br>
+                Frames Received: { row['frames_received'] }<br>
+                Gateways: { row['gateways'] }<br>
+                First:<br><small>{ row['frame_first']:%Y-%m-%d %H:%M(%Z) }</small><br>
+                Last:<br><small>{ row['frame_last']:%Y-%m-%d %H:%M(%Z) }</small>
+                """,
+        ))
+    singles_layer.add_to(popout_map)
 
     if not devices_missing_df.empty:
         missingdevices_layer = folium.FeatureGroup("Missing Devices")
@@ -368,16 +392,16 @@ def popoutMap(request, task_id=None):
             missingdevices_layer.add_child(folium.CircleMarker(
                 location=(row['lat'], row['long']),
                 radius=5,
-                popup=f"""
-                    DevEUI: {row['dev_eui']}<br>
-                    Marker: {row['marker']}<br>
-                    Address: {row['address']}<br>
-                    """,
-
                 color='black',
                 fill=True,
                 fill_color='black',
                 fill_opacity=0.7,
+                popup=f"""
+                    D:{row['dev_eui']}<br>
+                    --missing--<br>
+                    Marker: {row['marker']}<br>
+                    Address: {row['address']}<br>
+                    """,
             ))
         missingdevices_layer.add_to(popout_map)
 
@@ -388,13 +412,14 @@ def popoutMap(request, task_id=None):
     start_timer = perf_counter()
 
     popout_map_html = popout_map._repr_html_()
-    # ic(popout_map_html)
+
     context["popout_map_html"] = popout_map_html
 
     stop_timer = perf_counter()
     map_html_time = round(stop_timer - start_timer, 1)
     map_time = round(map_plot_time + map_html_time, 1)
     context['map_time'] = map_time
+    context['request'] = request
 
     rendered = render_to_string('performer/popout_map.html', context)
 
