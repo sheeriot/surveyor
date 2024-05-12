@@ -166,7 +166,8 @@ CSP_IMG_SRC = (
     'https://tile.openstreetmap.org',
     'https://cdn.jsdelivr.net',
     'https://*.tile.opentopomap.org',
-    'https://*.basemaps.cartocdn.com'
+    'https://*.basemaps.cartocdn.com',
+    'https://cdnjs.cloudflare.com',
 )
 CSP_FONT_SRC = (
     "'self'",
