@@ -107,8 +107,5 @@ def device_summ_frames(frames_df):
 
 def getDeviceFreqs(frames_df):
     device_freqs_df = frames_df['freq'].value_counts().reset_index()
-    ic(device_freqs_df.info())
     device_freqs_df.columns = ['freq', 'count']
-    ic(device_freqs_df.info())
-    ic(device_freqs_df)
     return device_freqs_df
