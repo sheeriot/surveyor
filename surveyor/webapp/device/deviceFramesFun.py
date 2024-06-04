@@ -1,5 +1,5 @@
 import pandas as pd
-# from icecream import ic
+from icecream import ic
 
 
 def device_summ_frames(frames_df):
@@ -103,3 +103,9 @@ def device_summ_frames(frames_df):
     )
 
     return frames_df, device_uplinks_df
+
+
+def getDeviceFreqs(frames_df):
+    device_freqs_df = frames_df['freq'].value_counts().reset_index()
+    device_freqs_df.columns = ['freq', 'count']
+    return device_freqs_df

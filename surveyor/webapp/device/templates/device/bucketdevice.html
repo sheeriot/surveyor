@@ -51,13 +51,13 @@
 <h3>Results: {{ dev_eui }}</h3>
 <p>Contents:</p>
 <ul class="list-group list-group-horizontal-sm">
-    <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
+    <li class="list-group-item"><a href="#summary-tables">Summary Tables</a></li>
     <li class="list-group-item"><a href="#uplinks-timeplot">Uplinks/Time Plot</a></li>
     <li class="list-group-item"><a href="#device-uplinks">Device Uplinks Table</a></li>
     <li class="list-group-item"><a href="#received-frames">Received Frames Table</a></li>
 </ul>
 <hr>
-<h4 id="summary-table">Summary Table</h4>
+<h4 id="summary-tables">Summary Tables</h4>
 <table class="table table-bordered table-light text-center">
     <tr>
         <th>First Frame</th>
@@ -84,12 +84,49 @@
         <td>{{ uplinks_pdr|mul:100|floatformat:1 }}%</td>
     </tr>
 </table>
+
 {% if graph %}
 <hr>
 <ul><li><a href="#top">goto Top</a></li></ul>
 <h3 id="uplinks-timeplot">RF Uplinks - Time Plot: {{ meas }}@{{ source_name }}</h3>
 <div class="text-center">
     <img src="data:image/png;base64, {{graph|safe}}">
+</div>
+{% endif %}
+
+<hr>
+<h4 id="freq-freqs">Device Uplink Frequency Frequencies</h4>
+<h5 id="freqs-in-plan">Frequency Counts - In Channel Plan</h5>
+<table id="freq-in-plan-table" class="table table-bordered dt-responsive nowrap w-100">
+  <caption>In-Plan Received Frequencies</caption>
+  <tbody>
+    {{ device_freqs_in_df | convert_data_frame_to_html_table_rows | safe}}
+  </tbody>
+</table>
+
+<h5 id="freqs-out-plan">Frequency Counts - NOT IN Channel Plan</h5>
+<table id="freq-out-plan-table" class="table table-bordered dt-responsive nowrap w-100">
+  <caption>Out-of-Plan Received Frequencies</caption>
+  <tbody>
+    {{ device_freqs_out_df | convert_data_frame_to_html_table_rows | safe}}
+  </tbody>
+</table>
+
+{% if graph_freqs_in %}
+<hr>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<h5 id="uplinks-timeplot">Frequency Frequencies: {{ dev_eui }} - Source: {{ source_name }}</h5>
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph_freqs_in|safe}}">
+</div>
+{% endif %}
+
+{% if graph_freqs_out %}
+<hr>
+<ul><li><a href="#top">goto Top</a></li></ul>
+<h5 id="uplinks-timeplot">Frequency - Out of Plan: {{ dev_eui }} - Source: {{ source_name }}</h5>
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph_freqs_out|safe}}">
 </div>
 {% endif %}
 <hr>

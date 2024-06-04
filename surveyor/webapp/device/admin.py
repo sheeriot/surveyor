@@ -12,13 +12,21 @@ import pandas as pd
 # from icecream import ic
 from time import perf_counter
 
-from .models import EndNode, SurveyorOrg, InfluxSource, BucketDevice
+from .models import EndNode, SurveyorOrg, InfluxSource, BucketDevice, ChannelPlan
 from accounts.models import Person
 
 # class EndNodeAdmin(admin.ModelAdmin):
 #   exclude = ('constants',)
 # Register your models here.
 # admin.site.register(EndNode, EndNodeAdmin)
+
+
+# admin.register(ChannelPlan)
+class ChannelPlanAdmin(admin.ModelAdmin):
+    search_fields = ['name']
+
+# admin.site.register(ChannelPlan)
+admin.site.register(ChannelPlan, ChannelPlanAdmin)
 
 
 class SurveyorOrgAdmin(admin.ModelAdmin):

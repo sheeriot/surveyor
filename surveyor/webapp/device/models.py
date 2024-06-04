@@ -72,6 +72,7 @@ class SurveyorOrg(models.Model):
     class Meta:
         ordering = ('name',)
 
+
 class InfluxSource(models.Model):
     surveyor_org = models.ForeignKey(
         'SurveyorOrg',
@@ -86,6 +87,25 @@ class InfluxSource(models.Model):
     influx_org = models.CharField(max_length=30, null=False, blank=True, default='')
     influx_token = models.CharField(max_length=100, null=False, blank=True, default='')
 
+    channel_plan = models.ForeignKey(
+        'ChannelPlan',
+        on_delete=models.CASCADE,
+        default=None,
+        null=True
+    )
+
     def __str__(self):
         if self.name:
             return self.name
+
+
+class ChannelPlan(models.Model):
+    name = models.CharField(max_length=30, null=False, blank=False, unique=True)
+    freqs = models.TextField(null=False, blank=False)
+
+    def __str__(self):
+        if self.name:
+            return self.name
+
+    class Meta:
+        ordering = ('name',)

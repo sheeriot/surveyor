@@ -13,7 +13,7 @@ import redis
 import json
 import folium
 
-from icecream import ic
+# from icecream import ic
 
 from celery.result import AsyncResult
 from device.models import InfluxSource, BucketDevice
@@ -68,7 +68,6 @@ def popoutMap(request, task_id=None):
         device_uplinks_json = redis_client.get(f'{task_id}:device_uplinks_df')
         device_uplinks_dict = json.loads(device_uplinks_json)
         device_uplinks_df = pd.DataFrame(device_uplinks_dict)
-        # ic(device_uplinks_df.info())
 
         # fix the timestamps
         device_uplinks_df['frame_first'] = pd.to_datetime(device_uplinks_df['frame_first'],
