@@ -10,12 +10,12 @@ from surveyor.settings import TIME_ZONE
 from .models import InfluxSource
 from .forms import EndNodeForm, bucketDeviceForm
 from .getDeviceData import getDeviceFrames
-from .deviceFramesFun import device_summ_frames
+from .deviceFramesFun import device_summ_frames, getDeviceFreqs
 
 from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 
-# from icecream import ic
+from icecream import ic
 from time import perf_counter
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -84,14 +84,22 @@ def bucketdevice(request, **kwargs):
             return render(request, 'device/bucketdevice.html', context)
 
     elif request.method == 'GET' and kwargs:
+        start_default, end_default = init_datetime_daysago(tz, 3)
+
         if 'start_mark' in kwargs:
             start_mark = kwargs.pop('start_mark')
             start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
             start = start_zulu.astimezone(local_tz)
+        else:
+            start = start_default
+
         if 'end_mark' in kwargs:
             end_mark = kwargs.pop('end_mark')
             end_zulu = dateutil.parser.parse(end_mark).replace(tzinfo=zulu_tz)
             end = end_zulu.astimezone(local_tz)
+        else:
+            end = end_default
+
         if 'source_id' in kwargs:
             source_id = kwargs.pop('source_id')
             source = InfluxSource.objects.get(pk=source_id)
@@ -134,7 +142,7 @@ def bucketdevice(request, **kwargs):
 
     elif request.method == 'GET':
 
-        yesterday_morning, now = init_datetime(tz, 1)
+        yesterday_morning, now = init_datetime_daysago(tz, 1)
         form = bucketDeviceForm(
             initial={
                 'start': yesterday_morning,
@@ -212,6 +220,10 @@ def bucketdevice(request, **kwargs):
 
     # get the frames summarized into two tables
     frames_df, device_uplinks_df = device_summ_frames(frames_df)
+
+    # Frequency Counts
+    device_freqs_df = getDeviceFreqs(device_uplinks_df)
+    ic(device_freqs_df.info())
 
     frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
     context['frames_df'] = frames_df
