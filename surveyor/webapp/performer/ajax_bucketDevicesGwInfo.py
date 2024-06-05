@@ -12,7 +12,7 @@ from celery.result import AsyncResult
 
 from surveyor.utils import getGraph
 
-# from icecream import ic
+from icecream import ic
 
 
 @login_required
@@ -38,6 +38,8 @@ def bucketDevicesGwInfo(request):
         gw_info_json = redis_client.get(f'{task_id}:gw_info_df')
         gw_info_dict = json.loads(gw_info_json)
         gw_info_df = pd.DataFrame(gw_info_dict)
+        ic(gw_info_df.info())
+        ic(gw_info_df)
 
         device_gw_json = redis_client.get(f'{task_id}:device_gw_df')
         device_gw_dict = json.loads(device_gw_json)
@@ -53,8 +55,8 @@ def bucketDevicesGwInfo(request):
     context = {
         'report_status': report_status,
     }
-
-    gw_info_df = gw_info_df.set_index('gateway')
+    if gw_info_df.shape[0] != 0:
+        gw_info_df = gw_info_df.set_index('gateway')
 
     # create an indexed Pandas series on gateway
     devices_per_gateway = device_gw_df.groupby('gateway')['dev_eui'].nunique().astype(int)

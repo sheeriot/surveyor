@@ -175,8 +175,20 @@ def bucketdevice(request, **kwargs):
 
     # get the channel plan setup
     cp = source.channel_plan
-    cp_freqs = cp.freqs.split(',')
-    cp_freqs_df = pd.DataFrame(cp_freqs, columns=['freq'])
+    ic(cp)
+
+    if cp is None:
+        cp_freqs = []
+        # cp_freqs_df = pd.DataFrame()
+        channelplan = False
+        context['channelplan'] = None
+
+    else:
+        cp_freqs = cp.freqs.split(',')
+        cp_freqs_df = pd.DataFrame(cp_freqs, columns=['freq'])
+        channelplan = True
+        channelplan_name = cp.name
+        context['channelplan'] = channelplan_name
 
     # It is Query Time!
     start_timer = perf_counter()
@@ -230,14 +242,15 @@ def bucketdevice(request, **kwargs):
     # Device Frequency Counts
     device_freqs_df = getDeviceFreqs(device_uplinks_df)
     # in channel plan
-    device_freqs_in_df = device_freqs_df[device_freqs_df['freq'].isin(cp_freqs)]
-    device_freqs_in_df = cp_freqs_df.merge(device_freqs_in_df, on='freq', how='outer').fillna(0)
-    device_freqs_in_df['count'] = device_freqs_in_df['count'].astype(int)
+    if channelplan:
+        device_freqs_in_df = device_freqs_df[device_freqs_df['freq'].isin(cp_freqs)]
+        device_freqs_in_df = cp_freqs_df.merge(device_freqs_in_df, on='freq', how='outer').fillna(0)
+        device_freqs_in_df['count'] = device_freqs_in_df['count'].astype(int)
 
-    context['device_freqs_in_df'] = device_freqs_in_df.T
+        context['device_freqs_in_df'] = device_freqs_in_df.T
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
-    ic(device_freqs_out_df)
+    # ic(device_freqs_out_df)
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
     # back to frames
@@ -364,26 +377,31 @@ def bucketdevice(request, **kwargs):
 
     graph = getGraph()
     context["graph"] = graph
+    plt.close()
 
     # passing along a graph of Channel Plan hits
-    graphSetUp(width=10, height=3)
-    device_freqs_in_df.plot(x='freq', y='count', kind='bar', color='green')
-    plt.xlabel('Frequency')
-    plt.ylabel('Count')
-    plt.title('Device Frequencies - In Channel Plan')
-    plt.grid(True)
-    graph_freqs_in = getGraph()
-    context["graph_freqs_in"] = graph_freqs_in
+    if channelplan:
+        graphSetUp(width=10, height=3)
+        device_freqs_in_df.plot(x='freq', y='count', kind='bar', color='green', width=0.85, zorder=3)
+        plt.xlabel('Frequency')
+        plt.ylabel('Count')
+        plt.title('Device Frequencies - In Channel Plan')
+        plt.grid(axis='y', zorder=0)
+        graph_freqs_in = getGraph()
+        context["graph_freqs_in"] = graph_freqs_in
+        plt.close()
 
     # Out of Plan Freqs
     if device_freqs_out_df.shape[0] != 0:
         graphSetUp(width=10, height=3)
-        device_freqs_out_df.plot(x='freq', y='count', kind='bar', color='red')
+        device_freqs_out_df.plot(x='freq', y='count', kind='bar', color='red', width=0.85, zorder=3)
         plt.xlabel('Frequency')
         plt.ylabel('Count')
         plt.title('Device Frequencies - Out of Channel Plan')
+        plt.grid(axis='y', zorder=0)
         graph_freqs_out = getGraph()
         context["graph_freqs_out"] = graph_freqs_out
+        plt.close()
 
     # ready for return to viewer
 
