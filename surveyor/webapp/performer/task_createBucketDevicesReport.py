@@ -12,7 +12,7 @@ from device.locate import pluscode2latlon
 from .getBucketData import getBucketData
 from surveyor.utils import geoDistance
 
-# from icecream import ic
+from icecream import ic
 
 
 @shared_task
@@ -40,9 +40,13 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         gw_info_df = gw_info_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
     else:
         # create a blank dataframe for return - No Locations for Gateways!
-        gw_info_df = pd.DataFrame()
-    gw_info_df = gw_info_df.set_index('gateway')
 
+        unique_gateways = frames_df['gateway'].unique()
+        gw_info_df = pd.DataFrame({'gateway': frames_df['gateway'].unique()})
+
+    ic(gw_info_df)
+    gw_info_df = gw_info_df.set_index('gateway')
+ 
     # add frame count per gateway
     gw_framecount_df = frames_df.groupby(['gateway'],
                                          observed=False).size().to_frame("frames")
