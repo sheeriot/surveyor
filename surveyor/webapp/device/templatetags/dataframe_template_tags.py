@@ -1,5 +1,5 @@
 from django import template
-# from icecream import ic
+from icecream import ic
 import pandas as pd
 from django.urls import reverse
 
@@ -8,6 +8,7 @@ register = template.Library()
 
 def convert_data_frame_to_html_table_headers(df):
     html = "<tr>"
+
     for col in df.columns:
         html += f"<th>{col}</th>"
     html += "</tr>"

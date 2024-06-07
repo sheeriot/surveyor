@@ -12,7 +12,7 @@ from device.locate import pluscode2latlon
 from .getBucketData import getBucketData
 from surveyor.utils import geoDistance
 
-from icecream import ic
+# from icecream import ic
 
 
 @shared_task
@@ -41,12 +41,11 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     else:
         # create a blank dataframe for return - No Locations for Gateways!
 
-        unique_gateways = frames_df['gateway'].unique()
+        # unique_gateways = frames_df['gateway'].unique()
         gw_info_df = pd.DataFrame({'gateway': frames_df['gateway'].unique()})
 
-    ic(gw_info_df)
     gw_info_df = gw_info_df.set_index('gateway')
- 
+
     # add frame count per gateway
     gw_framecount_df = frames_df.groupby(['gateway'],
                                          observed=False).size().to_frame("frames")
@@ -57,8 +56,9 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     gw_freqs_df = frames_df.groupby(['gateway', 'frequency'],
                                     observed=False).size().to_frame("frames")
     gw_freqs_df = gw_freqs_df.reset_index().pivot(index='gateway', columns='frequency', values='frames')
-    
+
     gw_freqs_df = gw_freqs_df.join(gw_framecount_df)
+    gw_freqs_df = gw_freqs_df.rename(columns={'frequency': 'freq'})
 
     count_col = gw_freqs_df.pop('frames')
     gw_freqs_df.insert(0, 'frames', count_col)
@@ -114,7 +114,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
 
     # but wait, there is more (thanks notebook)
     sf_df = frames_df.groupby('dev_eui')['spreading_factor'].mean().round(1).to_frame('avg')
-    sf_summ_df = frames_df.groupby(['dev_eui','spreading_factor'], observed=False).size().to_frame("frames").reset_index()
+    sf_summ_df = frames_df.groupby(['dev_eui', 'spreading_factor'], observed=False).size().to_frame("frames").reset_index()
     sf_summ_df = sf_summ_df.pivot(index='dev_eui', columns='spreading_factor', values='frames').fillna(0).astype('int')
     sf_df = sf_df.join(sf_summ_df).add_prefix('sf_')
     # now add those DF columns to the device_uplinks_df

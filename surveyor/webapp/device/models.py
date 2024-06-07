@@ -91,7 +91,8 @@ class InfluxSource(models.Model):
         'ChannelPlan',
         on_delete=models.CASCADE,
         default=None,
-        null=True
+        blank=True,
+        null=True,
     )
 
     def __str__(self):

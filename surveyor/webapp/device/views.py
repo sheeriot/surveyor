@@ -15,7 +15,7 @@ from .deviceFramesFun import device_summ_frames, getDeviceFreqs
 from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 
-from icecream import ic
+# from icecream import ic
 from time import perf_counter
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -175,7 +175,6 @@ def bucketdevice(request, **kwargs):
 
     # get the channel plan setup
     cp = source.channel_plan
-    ic(cp)
 
     if cp is None:
         cp_freqs = []
@@ -250,7 +249,7 @@ def bucketdevice(request, **kwargs):
         context['device_freqs_in_df'] = device_freqs_in_df.T
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
-    # ic(device_freqs_out_df)
+  
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
     # back to frames
@@ -384,7 +383,7 @@ def bucketdevice(request, **kwargs):
         graphSetUp(width=10, height=3)
         device_freqs_in_df.plot(x='freq', y='count', kind='bar', color='green', width=0.85, zorder=3)
         plt.xlabel('Frequency')
-        plt.ylabel('Count')
+        # plt.ylabel('Count')
         plt.title('Device Frequencies - In Channel Plan')
         plt.grid(axis='y', zorder=0)
         graph_freqs_in = getGraph()
@@ -396,7 +395,7 @@ def bucketdevice(request, **kwargs):
         graphSetUp(width=10, height=3)
         device_freqs_out_df.plot(x='freq', y='count', kind='bar', color='red', width=0.85, zorder=3)
         plt.xlabel('Frequency')
-        plt.ylabel('Count')
+        # plt.ylabel('Count')
         plt.title('Device Frequencies - Out of Channel Plan')
         plt.grid(axis='y', zorder=0)
         graph_freqs_out = getGraph()

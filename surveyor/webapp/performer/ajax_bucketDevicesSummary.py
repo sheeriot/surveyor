@@ -20,13 +20,7 @@ import dateutil.tz
 def bucketDevicesSummary(request):
 
     task_id = request.GET.get('task_id', None)
-
-    # if timezone.get_current_timezone():
-    #     tz = str(timezone.get_current_timezone())
-    # else:
-    #     tz = TIME_ZONE
     zulu_tz = dateutil.tz.gettz('UTC')
-    # local_tz = dateutil.tz.gettz(tz)
 
     if task_id is not None:
         task = AsyncResult(task_id)
