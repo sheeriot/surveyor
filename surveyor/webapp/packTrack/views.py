@@ -12,9 +12,9 @@ from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 from device.models import EndNode
 from device.getDeviceData import getDeviceFrames
-from device.deviceFramesFun import device_summ_frames
+from device.deviceFramesFun import device_summ_frames, getDeviceFreqs
 
-# from icecream import ic
+from icecream import ic
 from time import perf_counter
 
 import matplotlib.pyplot as plt
@@ -157,8 +157,25 @@ def packGraph(request, deveui='', **kwargs):
         'endnode': endnode,
         'source': source,
         'source_id': source_id,
+        'source_name': source.name,
         'meas': meas,
     }
+    # get the channel plan setup
+    cp = source.channel_plan
+
+    if cp is None:
+        cp_freqs = []
+        # cp_freqs_df = pd.DataFrame()
+        channelplan = False
+        context['channelplan'] = None
+
+    else:
+        cp_freqs = cp.freqs.split(',')
+        cp_freqs_df = pd.DataFrame(cp_freqs, columns=['freq'])
+        channelplan = True
+        channelplan_name = cp.name
+        context['channelplan'] = channelplan_name
+
     start_timer = perf_counter()
     try:
         frames_df = getDeviceFrames(source_id, meas, dev_eui, start_zulu, end_zulu)
@@ -190,6 +207,20 @@ def packGraph(request, deveui='', **kwargs):
     # summarize the frames into device_uplinks_df
     frames_df, device_uplinks_df = device_summ_frames(frames_df)
 
+    # Device Frequency Counts
+    device_freqs_df = getDeviceFreqs(device_uplinks_df)
+    # in channel plan
+    if channelplan:
+        device_freqs_in_df = device_freqs_df[device_freqs_df['freq'].isin(cp_freqs)]
+        device_freqs_in_df = cp_freqs_df.merge(device_freqs_in_df, on='freq', how='outer').fillna(0)
+        device_freqs_in_df['count'] = device_freqs_in_df['count'].astype(int)
+
+        context['device_freqs_in_df'] = device_freqs_in_df.T
+    # out of channel plan
+    device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
+
+    context['device_freqs_out_df'] = device_freqs_out_df.T
+
     # Now the Gateways
     context['gateway_count'] = frames_df.gateway.nunique()
     if 'gw_latitude' in frames_df.columns and 'gw_longitude' in frames_df.columns:
@@ -204,7 +235,10 @@ def packGraph(request, deveui='', **kwargs):
 
     # Localize the time for views and pass on frames an uplinks dataframes
     frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
-    context['frames_df'] = frames_df.copy()
+    frames_out_df = frames_df.copy()
+    frames_out_df[['gw_lat', 'gw_long', 'helium']] = frames_out_df[['gw_lat', 'gw_long', 'helium']].fillna('')
+    context['frames_df'] = frames_out_df
+
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
     context['device_uplinks_df'] = device_uplinks_df.copy()
 
@@ -276,8 +310,8 @@ def packGraph(request, deveui='', **kwargs):
     ax2.set_yticks([-135, -120, -105, -90, -75, -60, -45, -30])
 
     # plotting
-    l1 = ax2.scatter(device_uplinks_df['time'], device_uplinks_df['rssi'], marker='*', color='indigo', s=12)
-    l2 = ax1.scatter(device_uplinks_df['time'], device_uplinks_df['snr'], marker='s', color='dodgerblue', s=12)
+    l1 = ax2.scatter(frames_df['time'], frames_df['rssi'], marker='*', color='indigo', s=12)
+    l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
@@ -323,6 +357,31 @@ def packGraph(request, deveui='', **kwargs):
 
     graph = getGraph()
     context["graph"] = graph
+    plt.close()
+
+    # passing along a graph of Channel Plan hits
+    if channelplan:
+        graphSetUp(width=10, height=3)
+        device_freqs_in_df.plot(x='freq', y='count', kind='bar', color='green', width=0.85, zorder=3)
+        plt.xlabel('Frequency')
+        # plt.ylabel('Count')
+        plt.title('Device Frequencies - In Channel Plan')
+        plt.grid(axis='y', zorder=0)
+        graph_freqs_in = getGraph()
+        context["graph_freqs_in"] = graph_freqs_in
+        plt.close()
+
+    # Out of Plan Freqs
+    if device_freqs_out_df.shape[0] != 0:
+        graphSetUp(width=10, height=3)
+        device_freqs_out_df.plot(x='freq', y='count', kind='bar', color='red', width=0.85, zorder=3)
+        plt.xlabel('Frequency')
+        # plt.ylabel('Count')
+        plt.title('Device Frequencies - Out of Channel Plan')
+        plt.grid(axis='y', zorder=0)
+        graph_freqs_out = getGraph()
+        context["graph_freqs_out"] = graph_freqs_out
+        plt.close()
 
     context['console_messages'] = console_messages
 
