@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from geopy.distance import geodesic
 
-from icecream import ic
+# from icecream import ic
 
 
 def geoDistance(lat1, long1, lat2, long2):

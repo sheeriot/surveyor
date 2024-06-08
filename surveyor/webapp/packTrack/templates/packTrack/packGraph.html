@@ -68,6 +68,7 @@
 <ul class="list-group list-group-horizontal-sm">
     <li class="list-group-item"><a href="#summary-table">Summary Table</a></li>
     <li class="list-group-item"><a href="#uplinks-timeplot">Uplinks/Time Plot</a></li>
+    <li class="list-group-item"><a href="#freq-freqs">Uplink Frequencies</a></li>
     <li class="list-group-item"><a href="#device-uplinks">Device Uplinks Table</a></li>
     <li class="list-group-item"><a href="#received-frames">Received Frames Table</a></li>
 </ul>
@@ -107,6 +108,45 @@
     <img src="data:image/png;base64, {{graph|safe}}">
 </div>
 {% endif %}
+
+<ul><li><a href="#top">goto Top</a></li></ul>
+<hr>
+<h4 id="freq-freqs">Uplink Frequencies</h4>
+<p>Channel Plan: <strong>{{ channelplan }}</strong></p>
+<h5 id="uplinks-timeplot">In Channel Plan: {{ dev_eui }} - Source: {{ source_name }}</h5>
+
+{% if device_freqs_in_df.empty %}
+  <p>- None in Channel Plan</p>
+{% else %}
+<table id="freq-in-plan-table" class="table table-bordered dt-responsive nowrap w-100">
+  <caption>In Channel Plan - Received Frequencies</caption>
+  <tbody>
+    {{ device_freqs_in_df | convert_data_frame_to_html_table_rows | safe}}
+  </tbody>
+</table>
+{% endif %}
+{% if graph_freqs_in %}
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph_freqs_in|safe}}">
+</div>
+{% endif %}
+
+{% if not device_freqs_out_df.empty %}
+<h5 id="uplinks-timeplot">Not In Channel Plan: {{ dev_eui }} - Source: {{ source_name }}</h5>
+<table id="freq-out-plan-table" class="table table-bordered dt-responsive nowrap w-100">
+  <caption>Not in Channel Plan - Received Frequencies</caption>
+  <tbody>
+    {{ device_freqs_out_df | convert_data_frame_to_html_table_rows | safe}}
+  </tbody>
+</table>
+{% endif %}
+{% if graph_freqs_out %}
+<div class="text-center">
+    <img src="data:image/png;base64, {{graph_freqs_out|safe}}">
+</div>
+{% endif %}
+
+<!-- Device Uplinks Table -->
 <hr>
 <h4 id="device-uplinks">Device Uplinks</h4>
 

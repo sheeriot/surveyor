@@ -64,10 +64,12 @@ def bucketDevicesGwInfo(request):
 
     context = {
         'report_status': report_status,
+        'source_name': source.name
     }
 
     # Process Channel Plan
     cp = source.channel_plan
+
     if cp is None:
         cp_freqs = []
         channelplan = False

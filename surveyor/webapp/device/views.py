@@ -15,7 +15,7 @@ from .deviceFramesFun import device_summ_frames, getDeviceFreqs
 from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 
-# from icecream import ic
+from icecream import ic
 from time import perf_counter
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -227,7 +227,7 @@ def bucketdevice(request, **kwargs):
         gw_loc_df = gw_loc_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
         gw_loc_df = gw_loc_df.set_index('gateway')
         # these columns no longer needed
-        frames_df = frames_df.drop(columns=['gw_latitude', 'gw_longitude'])
+        # frames_df = frames_df.rename(columns=['gw_latitude': 'gw_lat, 'gw_longitude': 'gw_long'])
         # gw_loc_df.to_csv(f'{path_out}/{env_name}_gw_locs_{runstamp}.csv')
     else:
         console_messages.append('No gateway locations found')
@@ -249,12 +249,15 @@ def bucketdevice(request, **kwargs):
         context['device_freqs_in_df'] = device_freqs_in_df.T
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
-  
+
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
     # back to frames
-    frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
-    context['frames_df'] = frames_df
+    # frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
+    # ic(frames_df.info())
+    frames_out_df = frames_df.copy()
+    frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
+    context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
     context['device_uplinks_df'] = device_uplinks_df
@@ -328,8 +331,8 @@ def bucketdevice(request, **kwargs):
     ax2.set_yticks([-135, -120, -105, -90, -75, -60, -45, -30])
 
     # plotting
-    l1 = ax2.scatter(device_uplinks_df['time'], device_uplinks_df['rssi'], marker='*', color='indigo', s=12)
-    l2 = ax1.scatter(device_uplinks_df['time'], device_uplinks_df['snr'], marker='s', color='dodgerblue', s=12)
+    l1 = ax2.scatter(frames_df['time'], frames_df['rssi'], marker='*', color='indigo', s=12)
+    l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
