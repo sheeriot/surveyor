@@ -294,9 +294,9 @@ def bucketdevice(request, **kwargs):
     fig.suptitle(f"DevEUI:{dev_eui}", fontsize=18, fontweight='bold')
     ax1.set_title(f"RF Uplink Performance: {start.strftime('%Y-%m-%d %H:%M')} to {end.strftime('%Y-%m-%d %H:%M')}")
 
-    ax1.set_ylabel("Best SNR/Misses")
+    ax1.set_ylabel("NR/Misses")
     ax1.set_xlabel("RX Time")
-    ax2.set_ylabel("Best RSSI")
+    ax2.set_ylabel("RSSI")
 
     # time ticks
     myFmt = mdates.HourLocator('%H')
@@ -324,15 +324,27 @@ def bucketdevice(request, **kwargs):
     ax1.xaxis.grid(True)
 
     # Y axis limits
-    ax1.set_ylim([-15, 20])
-    ax2.set_ylim([-135, -30])
+    ax1.set_ylim([-20, 15])
+    ax2.set_ylim([-140, -35])
     # y axis, set ticks
-    ax1.set_yticks([-15, -10, -5, 0, 5, 10, 15, 20])
-    ax2.set_yticks([-135, -120, -105, -90, -75, -60, -45, -30])
+    ax1.set_yticks([-20, -15, -10, -5, 0, 5, 10, 15])
+    ax2.set_yticks([-140, -125, -110, -95, -80, -65, -50, -35])
+
+    if 'helium' in frames_df.columns:
+        helium_frames_df = frames_df[frames_df['helium']]
+        everynet_frames_df = frames_df[~frames_df['helium']]
+        helium = True
+    else:
+        everynet_frames_df = frames_df
+        helium_frames_df = pd.DataFrame()
+        helium = False
 
     # plotting
-    l1 = ax2.scatter(frames_df['time'], frames_df['rssi'], marker='*', color='indigo', s=12)
+
     l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
+    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'], marker='*', color='#BF40BF', s=30)
+    if helium:
+        l5 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
@@ -362,16 +374,30 @@ def bucketdevice(request, **kwargs):
     ax2.tick_params(bottom=False)
 
     # legend
-    fig.legend((l1, l2, l3, l4),
-               ('RSSI', 'SNR', 'Miss', 'Join'),
-               loc='lower left',
-               bbox_to_anchor=(0.8, 0.8),
-               fontsize=12,
-               title_fontsize=16,
-               facecolor='azure',
-               framealpha=0.4,
-               edgecolor='black'
-               )
+    if helium:
+        fig.legend((l1, l5, l2, l3, l4),
+                ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
+                # loc='upper right',
+                bbox_to_anchor=(0.94, 1.0),
+                fontsize=8,
+                title_fontsize=12,
+                facecolor='azure',
+                fancybox=True,
+                framealpha=0.3,
+                edgecolor='black'
+                )
+    else:
+        fig.legend((l1, l2, l3, l4),
+                ('RSSI', 'SNR', 'Miss', 'Join'),
+                # loc='upper right',
+                bbox_to_anchor=(0.94, 1.0),
+                fontsize=8,
+                title_fontsize=12,
+                facecolor='azure',
+                fancybox=True,
+                framealpha=0.3,
+                edgecolor='black'
+                )
 
     # create grid
     plt.grid(True)
