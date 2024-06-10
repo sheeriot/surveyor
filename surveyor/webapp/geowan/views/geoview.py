@@ -182,6 +182,8 @@ def geoView(request, deveui='', **kwargs):
     # Create a new column 'new_uplinks' by mapping another column
     if 'dist' in frames_df:
         frames_df['dist_txt'] = frames_df['dist'].apply(dist_txt)
+    else:
+        frames_df['dist_txt'] = ''
 
     context['gps_uplinks'] = frames_df.shape[0]
 
@@ -198,9 +200,15 @@ def geoView(request, deveui='', **kwargs):
 
     # Localize the time for views and pass on frames an uplinks dataframes
     frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
-    frames_df[['gw_lat', 'gw_long', 'dist']] = frames_df[['gw_lat', 'gw_long', 'dist']].fillna('')
 
-    context['frames_df'] = frames_df.drop(['dist_txt'], axis=1)
+    if 'gw_lat' and 'gw_long' in frames_df.columns:
+        frames_df[['gw_lat', 'gw_long']] = frames_df[['gw_lat', 'gw_long']].fillna('')
+    if 'dist' in frames_df.columns:
+        frames_df['dist'] = frames_df['dist'].fillna('')
+    if 'dist_txt' in frames_df.columns:
+        frames_df.drop(['dist_txt'], axis=1)
+
+    context['frames_df'] = frames_df.copy()
 
     uplinks_df['time'] = uplinks_df['time'].dt.tz_convert(local_tz)
     context['uplinks_df'] = uplinks_df.copy()
