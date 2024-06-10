@@ -219,6 +219,9 @@ def packGraph(request, deveui='', **kwargs):
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
 
+    ic(device_freqs_out_df.T.info())
+    ic(device_freqs_out_df.T)
+
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
     # Now the Gateways
@@ -236,7 +239,9 @@ def packGraph(request, deveui='', **kwargs):
     # Localize the time for views and pass on frames an uplinks dataframes
     frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
     frames_out_df = frames_df.copy()
-    frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
+    if 'gw_lat' and 'gw_long' in frames_out_df.columns:
+        frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
+
     context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
@@ -353,28 +358,28 @@ def packGraph(request, deveui='', **kwargs):
     # legend
     if helium:
         fig.legend((l1, l5, l2, l3, l4),
-                ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
-                # loc='upper right',
-                bbox_to_anchor=(0.94, 1.0),
-                fontsize=8,
-                title_fontsize=12,
-                facecolor='azure',
-                fancybox=True,
-                framealpha=0.3,
-                edgecolor='black'
-                )
+                   ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
+                   # loc='upper right',
+                   bbox_to_anchor=(0.94, 1.0),
+                   fontsize=8,
+                   title_fontsize=12,
+                   facecolor='azure',
+                   fancybox=True,
+                   framealpha=0.3,
+                   edgecolor='black'
+                   )
     else:
         fig.legend((l1, l2, l3, l4),
-                ('RSSI', 'SNR', 'Miss', 'Join'),
-                # loc='upper right',
-                bbox_to_anchor=(0.94, 1.0),
-                fontsize=8,
-                title_fontsize=12,
-                facecolor='azure',
-                fancybox=True,
-                framealpha=0.3,
-                edgecolor='black'
-                )
+                   ('RSSI', 'SNR', 'Miss', 'Join'),
+                   # loc='upper right',
+                   bbox_to_anchor=(0.94, 1.0),
+                   fontsize=8,
+                   title_fontsize=12,
+                   facecolor='azure',
+                   fancybox=True,
+                   framealpha=0.3,
+                   edgecolor='black'
+                   )
 
     # create grid
     plt.grid(True)
