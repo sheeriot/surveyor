@@ -115,7 +115,7 @@
 <p>Channel Plan: <strong>{{ channelplan }}</strong></p>
 <h5 id="uplinks-timeplot">In Channel Plan: {{ dev_eui }} - Source: {{ source_name }}</h5>
 
-{% if device_freqs_in_df.any %}
+{% if not device_freqs_in_df.empty %}
 <table id="freq-in-plan-table" class="table table-bordered dt-responsive nowrap w-100">
   <caption>In Channel Plan - Received Frequencies</caption>
   <tbody>
