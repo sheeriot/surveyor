@@ -219,9 +219,6 @@ def packGraph(request, deveui='', **kwargs):
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
 
-    ic(device_freqs_out_df.T.info())
-    ic(device_freqs_out_df.T)
-
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
     # Now the Gateways

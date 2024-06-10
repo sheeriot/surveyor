@@ -181,7 +181,6 @@ def geoView(request, deveui='', **kwargs):
 
     # Create a new column 'new_uplinks' by mapping another column
     if 'dist' in frames_df:
-        ic(frames_df['dist'])
         frames_df['dist_txt'] = frames_df['dist'].apply(dist_txt)
 
     context['gps_uplinks'] = frames_df.shape[0]
