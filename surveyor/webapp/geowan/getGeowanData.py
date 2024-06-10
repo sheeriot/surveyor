@@ -27,7 +27,7 @@ def getGeowanFrames(source_id, meas, dev_eui, start, end):
             "gps_valid","gps_status","message_type",
             "latitude","longitude","duplicate",
             "rssi","snr","frequency",
-            "gw_latitude","gw_longitude",
+            "gw_latitude","gw_longitude","helium",
             "tag1","tag2"])
     """
 
@@ -75,6 +75,10 @@ def getGeowanFrames(source_id, meas, dev_eui, start, end):
 
     # now copy for processing
     frames_df = influx_pdf.copy().reset_index(drop=True)
+
+    # Convert 'helium' to boolean
+    if 'helium' in frames_df.columns:
+        frames_df['helium'] = frames_df['helium'].isin([True, 1.0, '1.0', 1])
 
     # drop rows with no lat/long
     try:

@@ -9,7 +9,7 @@ import dateutil.tz
 from time import perf_counter
 
 import pandas as pd
-from icecream import ic
+# from icecream import ic
 
 import folium
 
@@ -23,11 +23,11 @@ from surveyor.tower import tower_svg
 from ..getGeowanData import getGeowanFrames
 from ..geoWanFun import geowanSummFrames
 
-from ..form_geoview import geoViewSelect
+from ..form_geoview2 import geoViewSelect2
 
 
 @login_required
-def geoView(request, deveui='', **kwargs):
+def geoView2(request, deveui='', **kwargs):
     username = request.user
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
@@ -45,7 +45,7 @@ def geoView(request, deveui='', **kwargs):
     console_messages.append(F'Local Timezone: {tz}')
 
     if request.method == 'GET' and 'submit' in request.GET:
-        form = geoViewSelect(request.GET, orgs_list=orgs_list)
+        form = geoViewSelect2(request.GET, orgs_list=orgs_list)
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
@@ -68,7 +68,7 @@ def geoView(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
             }
-            return render(request, 'geowan/geoView.html', context)
+            return render(request, 'geowan/geoView2.html', context)
 
     elif request.method == 'GET' and kwargs:
         if 'start_mark' in kwargs:
@@ -83,7 +83,7 @@ def geoView(request, deveui='', **kwargs):
             endnode_id = kwargs.pop('endnode_id')
             endnode = EndNode.objects.get(pk=endnode_id)
 
-        form = geoViewSelect({
+        form = geoViewSelect2({
             "endnode": endnode_id,
             "start": start,
             'end': end},
@@ -112,11 +112,11 @@ def geoView(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
                 }
-            return render(request, 'geowan/geoView.html', context)
+            return render(request, 'geowan/geoView2.html', context)
 
     elif request.method == 'GET':
         yesterday_morning, now = init_datetime_daysago(tz, 1)
-        form = geoViewSelect(
+        form = geoViewSelect2(
             initial={
                 'start': yesterday_morning,
                 'end': now},
@@ -127,7 +127,7 @@ def geoView(request, deveui='', **kwargs):
             'console_messages': console_messages,
             'results_display': False,
         }
-        return render(request, 'geowan/geoView.html', context)
+        return render(request, 'geowan/geoView2.html', context)
 
     # ------ being here means we have a valid form ------
 
@@ -156,7 +156,7 @@ def geoView(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'geowan/geoView.html', context)
+        return render(request, 'geowan/geoView2.html', context)
 
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
@@ -169,7 +169,7 @@ def geoView(request, deveui='', **kwargs):
         console_messages.append(error_message)
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'geowan/geoView.html', context)
+        return render(request, 'geowan/geoView2.html', context)
 
     context['results_display'] = True
 
@@ -181,7 +181,6 @@ def geoView(request, deveui='', **kwargs):
 
     # Create a new column 'new_uplinks' by mapping another column
     if 'dist' in frames_df:
-        ic(frames_df['dist'])
         frames_df['dist_txt'] = frames_df['dist'].apply(dist_txt)
 
     context['gps_uplinks'] = frames_df.shape[0]
@@ -200,9 +199,9 @@ def geoView(request, deveui='', **kwargs):
     # Localize the time for views and pass on frames an uplinks dataframes
     frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
     frames_df[['gw_lat', 'gw_long', 'dist']] = frames_df[['gw_lat', 'gw_long', 'dist']].fillna('')
-  
+
     context['frames_df'] = frames_df.drop(['dist_txt'], axis=1)
-    
+
     uplinks_df['time'] = uplinks_df['time'].dt.tz_convert(local_tz)
     context['uplinks_df'] = uplinks_df.copy()
 
@@ -224,8 +223,8 @@ def geoView(request, deveui='', **kwargs):
 
     # color the map markers
     # rssi_mean
-    rssiscale_lower = -115
-    rssiscale_upper = -85
+    rssiscale_lower = -135
+    rssiscale_upper = -75
     rssiscale_range = rssiscale_upper - rssiscale_lower
     # color the RSSI markers (rssi and rssi_c) on uplinks and on frames
     uplinks_df['rssi_color'] = uplinks_df['rssi'].apply(
@@ -238,8 +237,8 @@ def geoView(request, deveui='', **kwargs):
     frames_df['rssi_c_color'] = frames_df['rssi_c'].apply(
             lambda x: color_lookup_red0((x - rssiscale_lower) / rssiscale_range * 100))
 
-    snrscale_lower = -10
-    snrscale_upper = 10
+    snrscale_lower = -20
+    snrscale_upper = 15
     snrscale_range = snrscale_upper - snrscale_lower
     # color the SNR markers on upinks_df and on frames_df
     uplinks_df['snr_color'] = uplinks_df['snr'].apply(
@@ -358,25 +357,25 @@ def geoView(request, deveui='', **kwargs):
     tower_markers.add_to(map_one)
 
     # Now the Best markers. Not per gateway
-    best_rssi_makers = folium.FeatureGroup("Best - RSSI")
+    # best_rssi_makers = folium.FeatureGroup("Best - RSSI")
     # RSSI Markers
-    for index, row in frames_df.iterrows():
+    # for index, row in frames_df.iterrows():
 
-        best_rssi_makers.add_child(folium.CircleMarker(
-            location=(row['lat'], row['long']),
-            radius=10,
-            popup=f"""
-                Count:{ row['count']} ({ row['addr'] })<br>
-                RSSI:<strong>{ row['rssi'] }</strong>,SNR:{ row['snr'] }<br>
-                { row['dist_txt'] }
-                { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
-            """,
-            color=row['rssi_color'],
-            fill=False,
-            fill_color=row['rssi_color'],
-            fill_opacity=0.5,
-        ))
-    best_rssi_makers.add_to(map_one)
+    #     best_rssi_makers.add_child(folium.CircleMarker(
+    #         location=(row['lat'], row['long']),
+    #         radius=10,
+    #         popup=f"""
+    #             Count:{ row['count']} ({ row['addr'] })<br>
+    #             RSSI:<strong>{ row['rssi'] }</strong>,SNR:{ row['snr'] }<br>
+    #             { row['dist_txt'] }
+    #             { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
+    #         """,
+    #         color=row['rssi_color'],
+    #         fill=False,
+    #         fill_color=row['rssi_color'],
+    #         fill_opacity=0.5,
+    #     ))
+    # best_rssi_makers.add_to(map_one)
 
     # best_snr_makers = folium.FeatureGroup("Best - SNR")
     # # SNR Markers
@@ -398,6 +397,27 @@ def geoView(request, deveui='', **kwargs):
     #     ))
     # best_snr_makers.add_to(map_one)
 
+    if 'helium' in frames_df.columns:
+        helium_marks = folium.FeatureGroup("Helium")
+        helium_frames_df = frames_df[frames_df['helium']]
+        for index, row in helium_frames_df.iterrows():
+            helium_marks.add_child(folium.Marker(
+                location=(row['lat'], row['long']),
+                popup=f"""
+                    GW:{ row['gateway'] }<br>
+                    Count:{ row['count'] }<br>
+                    RSSI:<strong>{row['rssi']}</strong>,
+                    SNR:{row['snr']}<br>
+                    { row['time'].strftime('%Y-%m-%d %H:%M(%Z)') }
+                """,
+                color=row['rssi_color'],
+                icon=folium.Icon(color="green", icon="circle-h", prefix='fa'),
+                # fill=False,
+                fill_color=row['rssi_color'],
+                fill_opacity=0.2,
+            ))
+            helium_marks.add_to(map_one)
+
     folium.LayerControl().add_to(map_one)
 
     stop_timer = perf_counter()
@@ -414,7 +434,7 @@ def geoView(request, deveui='', **kwargs):
     context['map_time'] = map_time
 
     context['console_messages'] = console_messages
-    return render(request, 'geowan/geoView.html', context)
+    return render(request, 'geowan/geoView2.html', context)
 
 
 def dist_txt(d):

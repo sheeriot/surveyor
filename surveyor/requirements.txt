@@ -1,4 +1,4 @@
-django==5.0.4
+django==5.0.6
 django-csp
 # django-password-validators
 django_bootstrap_icons
@@ -9,7 +9,7 @@ django-tz-detect
 folium
 influxdb-client
 matplotlib
-pandas==2.2.1
+pandas==2.2.2
 requests
 numpy
 gunicorn

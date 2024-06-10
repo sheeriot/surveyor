@@ -100,7 +100,7 @@ def geowanSummFrames(frames_df):
         'rssi', 'snr', 'rssi_c',
         'latitude', 'longitude',
         'gw_latitude', 'gw_longitude',
-        'distance',
+        'distance', 'helium'
     ]
     frame_cols = [col for col in frame_cols if col in frames_df.columns]
     # prune the frames
