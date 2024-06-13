@@ -256,7 +256,8 @@ def bucketdevice(request, **kwargs):
     # frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
     # ic(frames_df.info())
     frames_out_df = frames_df.copy()
-    frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
+    if 'gw_lat' and 'gw_long' in frames_df.columns:
+        frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
     context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)

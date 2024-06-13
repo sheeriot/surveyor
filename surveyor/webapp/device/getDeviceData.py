@@ -62,36 +62,46 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     except influx_pdf.DoesNotExist:
         raise ValueError(F"No Result/Table: {meas}")
 
+    # use rx_time (or  rcv_time) if available - gateway time?
     if 'rx_time' not in influx_pdf.columns and 'rcv_time' in influx_pdf.columns:
         influx_pdf = influx_pdf.rename(columns={'rcv_time': 'rx_time'})
+    if 'rx_time' in influx_pdf.columns:
+        # Saved fields are always UTC. Make it timezone aware
+        influx_pdf['time'] = pd.to_datetime(influx_pdf['rx_time'], unit='s').dt.tz_localize('UTC')
+        influx_pdf = influx_pdf.drop(columns=['rx_time'])
+    else:
+        # use DB time
+        influx_pdf['time'] = influx_pdf['_time']
+
+    influx_pdf = influx_pdf.drop(columns=['_time'])
+
+    # might be named gateway_eui
     if 'gateway' not in influx_pdf.columns and 'gateway_eui' in influx_pdf.columns:
         influx_pdf = influx_pdf.rename(columns={'gateway_eui': 'gateway'})
     if 'device_addr' not in influx_pdf.columns:
         influx_pdf['device_addr'] = 'not'
 
     # take a copy sorted by time
-    frames_df = influx_pdf.copy().reset_index(drop=True).sort_values(by=['rx_time'])
+    # now on 'time'
+    frames_df = influx_pdf.copy().reset_index(drop=True).sort_values(by=['time'])
 
     # Convert 'helium' to boolean
     # frames_df['helium'] = frames_df['helium'].astype('boolean')
     if 'helium' in frames_df.columns:
         frames_df['helium'] = frames_df['helium'].isin([True, 1.0, '1.0', 1])
 
-    # Saved fields are always UTC. Make it timezone aware
-    # using rx_time for a new field "time"
-    frames_df['time'] = pd.to_datetime(frames_df['rx_time'], unit='s').dt.tz_localize('UTC')
     # dump the old time fields
-    frames_df = frames_df.drop(columns=['_time', 'rx_time'])
+
 
     # drop the zeros in bandwidth
-    frames_df['bandwidth'] = frames_df['bandwidth'] / 1000
-    frames_df = frames_df.rename(columns={'bandwidth': 'bw_k'})
-    frames_df['bw_k'] = frames_df['bw_k'].astype('int')
+    if 'bandwidth' in frames_df.columns:
+        frames_df['bandwidth'] = frames_df['bandwidth'] / 1000
+        frames_df = frames_df.rename(columns={'bandwidth': 'bw_k'})
+        frames_df['bw_k'] = frames_df['bw_k'].astype('int')
 
     # drop stupid floating point crud (digits)
     frames_df['snr'] = frames_df['snr'].round(1)
 
-    # rename column bandwidth to bw_k
     frames_df = frames_df.astype({
         'counter_up': 'int',
         'spreading_factor': 'int',
@@ -102,10 +112,15 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     # change low cardinality (unique volues) columns to category for memory savings
     frames_df = frames_df.astype({
         'frequency': 'category',
-        'bw_k': 'category',
         'gateway': 'category',
         # 'spreading_factor': 'category', # keep it as integer for calculations
     })
+
+    if 'bw_k' in frames_df.columns:
+        frames_df = frames_df.astype({
+            'bw_k': 'category',
+        })
+
     # if the columns exist, set them first as integers (floats do weird things.)
 
     # Cast frame_size or payload_size columns to Int64 type, which happily works with NA values
