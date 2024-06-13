@@ -80,13 +80,16 @@ def getBucketData(source_id, meas, start_mark, end_mark):
     # Setup Data Types in dataframe
     pdf = pdf.astype({
         'counter_up': 'Int64',
-        'rx_time': 'string',
-        'bandwidth': 'Int64',
+
         'spreading_factor': 'Int64',
         'rssi': 'Int64',
         'frequency': 'string',
     })
-    # set Data Types only if the column exists
+    if 'rx_time' in pdf.columns:
+        pdf = pdf.astype({'rx_time': 'string'})
+    if 'bandwidth' in pdf.columns:
+        pdf = pdf.astype({'bandwidth': 'Int64'})
+        pdf = pdf.astype({'bandwidth': 'category'})
     if 'datarate' in pdf.columns:
         pdf = pdf.astype({'datarate': 'Int64'})
     if 'frame_size' in pdf.columns:
@@ -102,10 +105,8 @@ def getBucketData(source_id, meas, start_mark, end_mark):
     # change low cardinality to category for memory savings
     pdf = pdf.astype({
         'frequency': 'category',
-        'bandwidth': 'category',
         'gateway': 'category',
-        # 'spreading_factor': 'category',
-    })
+        })
     if 'datarate' in pdf.columns:
         pdf = pdf.astype({'datarate': 'category'})
 
