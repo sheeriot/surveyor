@@ -333,9 +333,11 @@ def packGraph(request, deveui='', **kwargs):
     rejoins_df['mark0'] = 0
     l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
 
-    bigmiss_df = device_uplinks_df.copy().loc[device_uplinks_df['missed'] >= 20]
-    bigmiss_df['mark15'] = 15
-    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark15'], marker='^', color='red', s=200)
+    bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
+    bigmiss_df['mark14'] = 14
+    ic(bigmiss_df.info())
+    ic(bigmiss_df)
+    l5 = ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
