@@ -247,6 +247,9 @@ def bucketdevice(request, **kwargs):
         device_freqs_in_df['count'] = device_freqs_in_df['count'].astype(int)
 
         context['device_freqs_in_df'] = device_freqs_in_df.T
+    else:
+        context['device_freqs_in_df'] = pd.DataFrame()
+
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
 
