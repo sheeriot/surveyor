@@ -325,7 +325,7 @@ def packGraph(request, deveui='', **kwargs):
     l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
     l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'], marker='*', color='#BF40BF', s=30)
     if helium:
-        l5 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
+        l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
@@ -335,8 +335,6 @@ def packGraph(request, deveui='', **kwargs):
 
     bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
     bigmiss_df['mark14'] = 14
-    # ic(bigmiss_df.info())
-    # ic(bigmiss_df)
     l5 = ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
 
     # remove border lines
@@ -356,7 +354,7 @@ def packGraph(request, deveui='', **kwargs):
 
     # legend
     if helium:
-        fig.legend((l1, l5, l2, l3, l4),
+        fig.legend((l1, l6, l2, l3, l4),
                    ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
                    # loc='upper right',
                    bbox_to_anchor=(0.94, 1.0),

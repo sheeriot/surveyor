@@ -50,8 +50,8 @@
 {% if results_display %}
 <div>
     Requested Report:
-    <a href="{% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
-        {% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
+    <a href="{% url 'packgraph2_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
+        {% url 'packgraph2_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
     </a>
     <ul class="list-group list-group-horizontal-sm">
         <li class="list-group-item">Source:<br>{{ source.name }}</li>
@@ -203,7 +203,7 @@
     </div>
   </div>
 
-  <table id="received-frames-results" class="table table-bordered dt-responsive nowrap w-100">
+  <table id="received-frames-results" class="table caption-top table-bordered dt-responsive nowrap w-100">
       <caption>Received Frames - {{ endnode.dev_eui }}</caption>
       <thead>
       {{ frames_df | convert_data_frame_to_html_table_headers | safe}}
@@ -238,7 +238,7 @@
     </div>
   </div>
 
-  <table id="device-downlinks-results" class="table table-bordered dt-responsive nowrap w-100">
+  <table id="device-downlinks-results" class="table caption-top table-bordered dt-responsive nowrap w-100">
     <caption>Downlink Frames - {{ endnode.dev_eui }}</caption>
     <thead>
       {{ downlinks_df | convert_data_frame_to_html_table_headers | safe}}

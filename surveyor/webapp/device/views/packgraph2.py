@@ -203,6 +203,7 @@ def packgraph2(request, deveui='', **kwargs):
     context['frames_received'] = frames_df.shape[0]
     context['frames_first'] = frames_df['time'].min()
     context['frames_last'] = frames_df['time'].max()
+    # ic(frames_df.info())
 
     # summarize the frames into device_uplinks_df
     frames_df, device_uplinks_df = device_summ_frames(frames_df)
@@ -242,7 +243,13 @@ def packgraph2(request, deveui='', **kwargs):
     context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
-    context['device_uplinks_df'] = device_uplinks_df.copy()
+
+    device_uplinks_out_df = device_uplinks_df.copy().drop(columns=['tgap'])
+
+    device_uplinks_out_df = device_uplinks_out_df.rename(columns={'tgapf': 'tgap'})
+    # ic(device_uplinks_out_df.info())
+
+    context['device_uplinks_df'] = device_uplinks_out_df
 
     # === Create Summary Data
     context['uplinks_received'] = device_uplinks_df.shape[0]
@@ -322,22 +329,24 @@ def packgraph2(request, deveui='', **kwargs):
 
     # plotting
 
-    l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
-    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'], marker='*', color='#BF40BF', s=30)
+    l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
+                     marker='s', color='dodgerblue', s=12, clip_on=False)
+    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'],
+                     marker='*', color='#BF40BF', s=30, clip_on=False)
     if helium:
-        l5 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
+        l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'],
+                         marker='$H$', c='brown', s=30, clip_on=False)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
-    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
+    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
+                     marker='^', color='red')
 
     rejoins_df['mark0'] = 0
     l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
 
     bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
-    bigmiss_df['mark14'] = 14
-    # ic(bigmiss_df.info())
-    # ic(bigmiss_df)
-    l5 = ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
+    bigmiss_df['mark15'] = 15
+    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark15'], marker='^', color='red', s=160, clip_on=False)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
@@ -356,7 +365,7 @@ def packgraph2(request, deveui='', **kwargs):
 
     # legend
     if helium:
-        fig.legend((l1, l5, l2, l3, l4),
+        fig.legend((l1, l6, l2, l3, l4),
                    ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
                    # loc='upper right',
                    bbox_to_anchor=(0.94, 1.0),
@@ -414,8 +423,15 @@ def packgraph2(request, deveui='', **kwargs):
 
     if endnode.downlinks is True:
         dlmeas = endnode.influx_measurement_downlinks
-        downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start, end)
-        context['downlinks_df'] = downlinks_df
+        try:
+            downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
+            downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
+            downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
+            context['downlinks_df'] = downlinks_df
+        except ValueError as err:
+            console_messages.append(F'{err}')
+            context['downlinks_df'] = pd.DataFrame()
+
     else:
         context['downlinks_df'] = pd.DataFrame()
 

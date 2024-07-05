@@ -3,6 +3,7 @@ from icecream import ic
 from influxdb_client import InfluxDBClient
 from .models import InfluxSource
 import pandas as pd
+from .deviceFramesFun import tstamp2time
 
 
 def getDeviceFrames(source_id, meas, dev_eui, start, end):
@@ -22,6 +23,7 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
         |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",
             "rx_time","rcv_time","device_addr","counter_up",
+            "confirmed", "ack", "lora_mac",
             "duplicate","frame_size","payload_size",
             "bandwidth","datarate","spreading_factor",
             "rssi","snr","frequency",
@@ -191,23 +193,19 @@ def getDownlinks(source_id, dlmeas, dev_eui, start, end):
         influx_pdf = frames_df.reset_index(drop=True)
 
     if influx_pdf.empty:
-        raise ValueError(F"Dataframe is Empty - check measurement name: {dlmeas}")
+        raise ValueError(F"No Downlinks - Measurement: {dlmeas}")
 
     # try/catch error
     try:
         influx_pdf = influx_pdf.drop(columns=['result', 'table'])
     except influx_pdf.DoesNotExist:
         raise ValueError(F"No Result/Table: {dlmeas}")
-    
-    ic('Downlinks Query Results')
-    # ic(influx_pdf.info())
-    # ic(influx_pdf)
-    for t in influx_pdf['tx_time'].to_numpy():
-        ic(t)
-    for t in influx_pdf['packet_time'].to_numpy():
-        ic(t)
+
     influx_pdf = influx_pdf.rename(columns={'packet_time': 'time'})
-    influx_pdf = influx_pdf.drop(columns=['_time'])
+    influx_pdf['time'] = influx_pdf['time'].apply(lambda t: tstamp2time(str(t)))
+    influx_pdf['tx_time'] = influx_pdf['tx_time'].apply(lambda t: tstamp2time(str(t)))
+
+    influx_pdf = influx_pdf.drop(columns=['_time', 'dev_eui'])
 
     # take a copy sorted by time
     # now on 'time'
@@ -245,6 +243,37 @@ def getDownlinks(source_id, dlmeas, dev_eui, start, end):
         frames_df = frames_df.astype({
             'datarate': 'category'
         })
+    if 'port' in frames_df.columns:
+        frames_df = frames_df.astype({
+            'port': 'Int64'
+        })
+        # Then convert to category
+        frames_df = frames_df.astype({
+            'port': 'category'
+        })
+    # ic(frames_df.info())
+    # this re-orders, and filters column names
+    downlink_cols = [
+        'time', 'tx_time', 'counter_down', 'gateway', 'confirmed', 'ack',
+        'frequency', 'datarate', 'spreading_factor',
+        'frame_size', 'payload', 'port', 'lora_mac'
+    ]
+    downlink_cols = [col for col in downlink_cols if col in frames_df.columns]
+    frames_df = frames_df[downlink_cols]
+
+    # rename columns for narrower table
+    frames_df = frames_df.rename(
+        columns={
+            'counter_down': 'count',
+            'confirmed': 'conf_req',
+            'ack': 'conf_ack',
+            'device_addr': 'addr',
+            'datarate': 'dr',
+            'frequency': 'freq',
+            'spreading_factor': 'sf',
+            'frame_size': 'fsize'
+        }
+    )
 
     frames_df = frames_df.reset_index(drop=True)
 

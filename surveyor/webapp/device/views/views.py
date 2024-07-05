@@ -356,10 +356,10 @@ def bucketdevice(request, **kwargs):
     rejoins_df['mark0'] = 0
     l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
 
-    bigmiss_df = device_uplinks_df.copy().loc[device_uplinks_df['missed'] >= 19]
-    bigmiss_df['mark19'] = 19
+    bigmiss_df = device_uplinks_df.copy().loc[device_uplinks_df['missed'] >= 14]
+    bigmiss_df['mark14'] = 14
 
-    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark19'], marker='^', color='red', s=200)
+    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
@@ -380,28 +380,28 @@ def bucketdevice(request, **kwargs):
     # legend
     if helium:
         fig.legend((l1, l5, l2, l3, l4),
-                ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
-                # loc='upper right',
-                bbox_to_anchor=(0.94, 1.0),
-                fontsize=8,
-                title_fontsize=12,
-                facecolor='azure',
-                fancybox=True,
-                framealpha=0.3,
-                edgecolor='black'
-                )
+                   ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
+                   # loc='upper right',
+                   bbox_to_anchor=(0.94, 1.0),
+                   fontsize=8,
+                   title_fontsize=12,
+                   facecolor='azure',
+                   fancybox=True,
+                   framealpha=0.3,
+                   edgecolor='black'
+                   )
     else:
         fig.legend((l1, l2, l3, l4),
-                ('RSSI', 'SNR', 'Miss', 'Join'),
-                # loc='upper right',
-                bbox_to_anchor=(0.94, 1.0),
-                fontsize=8,
-                title_fontsize=12,
-                facecolor='azure',
-                fancybox=True,
-                framealpha=0.3,
-                edgecolor='black'
-                )
+                   ('RSSI', 'SNR', 'Miss', 'Join'),
+                   # loc='upper right',
+                   bbox_to_anchor=(0.94, 1.0),
+                   fontsize=8,
+                   title_fontsize=12,
+                   facecolor='azure',
+                   fancybox=True,
+                   framealpha=0.3,
+                   edgecolor='black'
+                   )
 
     # create grid
     plt.grid(True)
