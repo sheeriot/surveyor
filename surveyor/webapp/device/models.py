@@ -23,6 +23,8 @@ class EndNode(models.Model):
     model = models.CharField(max_length=40, blank=True, default='')
     revision = models.CharField(max_length=10, blank=True, default='')
     gps_payload = models.BooleanField(default=False)
+    downlinks = models.BooleanField(default=False)
+    influx_measurement_downlinks = models.CharField(max_length=30, null=True, default='nameofdownmeas')
 
     def __str__(self):
         if self.name:

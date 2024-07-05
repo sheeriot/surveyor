@@ -7,12 +7,12 @@ import dateutil.parser
 import dateutil.tz
 
 from surveyor.settings import TIME_ZONE
-from .form_endnode import endNodeSelect
+from ..form_endnode2 import endNodeSelect2
 from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
-from device.models import EndNode
-from device.getDeviceData import getDeviceFrames
-from device.deviceFramesFun import device_summ_frames, getDeviceFreqs
+from ..models import EndNode
+from ..getDeviceData import getDeviceFrames, getDownlinks
+from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
 
 from icecream import ic
 from time import perf_counter
@@ -28,7 +28,7 @@ import pandas as pd
 
 
 @login_required
-def packGraph(request, deveui='', **kwargs):
+def packgraph2(request, deveui='', **kwargs):
     username = request.user
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
@@ -46,7 +46,7 @@ def packGraph(request, deveui='', **kwargs):
     console_messages.append(F'Local Timezone: {tz}')
 
     if request.method == 'GET' and 'submit' in request.GET:
-        form = endNodeSelect(request.GET, orgs_list=orgs_list)
+        form = endNodeSelect2(request.GET, orgs_list=orgs_list)
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
@@ -71,7 +71,7 @@ def packGraph(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
             }
-            return render(request, 'packTrack/packGraph.html', context)
+            return render(request, 'device/packgraph2.html', context)
 
     # got some kwargs from URL, but no submit button, process them
     elif request.method == 'GET' and kwargs:
@@ -95,7 +95,7 @@ def packGraph(request, deveui='', **kwargs):
         else:
             end = end_default
 
-        form = endNodeSelect({
+        form = endNodeSelect2({
             'endnode': endnode_id,
             'start': start,
             'end': end},
@@ -125,12 +125,12 @@ def packGraph(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
                 }
-            return render(request, 'packTrack/packGraph.html', context)
+            return render(request, 'device/packgraph2.html', context)
 
     elif request.method == 'GET':
 
         start_default, end_default = init_datetime_daysago(tz, 3)
-        form = endNodeSelect(
+        form = endNodeSelect2(
             initial={
                 'start': start_default,
                 'end': end_default},
@@ -141,7 +141,7 @@ def packGraph(request, deveui='', **kwargs):
             'console_messages': console_messages,
             'results_display': False,
         }
-        return render(request, 'packTrack/packGraph.html', context)
+        return render(request, 'device/packgraph2.html', context)
 
     # ------ being here means we have a valid form ------
     start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
@@ -185,7 +185,7 @@ def packGraph(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'packTrack/packGraph.html', context)
+        return render(request, 'device/packgraph2.html', context)
 
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
@@ -197,12 +197,13 @@ def packGraph(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'packTrack/packGraph.html', context)
+        return render(request, 'device/packgraph2.html', context)
 
     context['results_display'] = True
     context['frames_received'] = frames_df.shape[0]
     context['frames_first'] = frames_df['time'].min()
     context['frames_last'] = frames_df['time'].max()
+    # ic(frames_df.info())
 
     # summarize the frames into device_uplinks_df
     frames_df, device_uplinks_df = device_summ_frames(frames_df)
@@ -242,7 +243,13 @@ def packGraph(request, deveui='', **kwargs):
     context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
-    context['device_uplinks_df'] = device_uplinks_df.copy()
+
+    device_uplinks_out_df = device_uplinks_df.copy().drop(columns=['tgap'])
+
+    device_uplinks_out_df = device_uplinks_out_df.rename(columns={'tgapf': 'tgap'})
+    # ic(device_uplinks_out_df.info())
+
+    context['device_uplinks_df'] = device_uplinks_out_df
 
     # === Create Summary Data
     context['uplinks_received'] = device_uplinks_df.shape[0]
@@ -322,20 +329,24 @@ def packGraph(request, deveui='', **kwargs):
 
     # plotting
 
-    l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
-    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'], marker='*', color='#BF40BF', s=30)
+    l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
+                     marker='s', color='dodgerblue', s=12, clip_on=False)
+    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'],
+                     marker='*', color='#BF40BF', s=30, clip_on=False)
     if helium:
-        l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
+        l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'],
+                         marker='$H$', c='brown', s=30, clip_on=False)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
-    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
+    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
+                     marker='^', color='red')
 
     rejoins_df['mark0'] = 0
     l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
 
     bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
-    bigmiss_df['mark14'] = 14
-    l5 = ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
+    bigmiss_df['mark15'] = 15
+    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark15'], marker='^', color='red', s=160, clip_on=False)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
@@ -410,6 +421,20 @@ def packGraph(request, deveui='', **kwargs):
         context["graph_freqs_out"] = graph_freqs_out
         plt.close()
 
+    if endnode.downlinks is True:
+        dlmeas = endnode.influx_measurement_downlinks
+        try:
+            downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
+            downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
+            downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
+            context['downlinks_df'] = downlinks_df
+        except ValueError as err:
+            console_messages.append(F'{err}')
+            context['downlinks_df'] = pd.DataFrame()
+
+    else:
+        context['downlinks_df'] = pd.DataFrame()
+
     context['console_messages'] = console_messages
 
-    return render(request, 'packTrack/packGraph.html', context)
+    return render(request, 'device/packgraph2.html', context)

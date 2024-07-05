@@ -1,5 +1,7 @@
 import pandas as pd
-# from icecream import ic
+from datetime import timedelta
+
+from icecream import ic
 
 
 def device_summ_frames(frames_df):
@@ -10,11 +12,14 @@ def device_summ_frames(frames_df):
         time=pd.NamedAgg(column="time", aggfunc="min"),
         msec=pd.NamedAgg(column="time",
                          aggfunc=lambda t:
-                         (t.max() - t.min()).microseconds/1000),
+                         (t.max() - t.min()).total_seconds() * 1000),
         rssi=pd.NamedAgg(column="rssi", aggfunc="max"),
         snr=pd.NamedAgg(column="snr", aggfunc="max"),
     )
-    device_uplinks_df['msec'] = device_uplinks_df['msec'].astype('int')
+
+    device_uplinks_df.loc[device_uplinks_df['hits'] == 1, 'msec'] = None
+    device_uplinks_df['msec'] = device_uplinks_df['msec'].round(0).astype('Int64')
+
     device_uplinks_df['snr'] = device_uplinks_df['snr'].round(1)
 
     ordered_addrs = device_uplinks_df.sort_values(["time"])["device_addr"].unique()
@@ -25,7 +30,9 @@ def device_summ_frames(frames_df):
     device_uplinks_df['missed'] = device_uplinks_df.groupby(['device_addr'], observed=True)['counter_up'].diff()-1
     # fill sequence start (na) with 0, set to integer
     device_uplinks_df['missed'] = device_uplinks_df['missed'].fillna(0).astype('Int64')
-    device_uplinks_df['tgap'] = device_uplinks_df['time'].diff().dt.seconds.astype('Int64')
+
+    device_uplinks_df['tgap'] = device_uplinks_df['time'].diff()
+    device_uplinks_df['tgapf'] = device_uplinks_df['tgap'].apply(lambda x: format_timedelta(x))
 
     device_uplinks_df = device_uplinks_df.sort_values(["device_addr", "counter_up"])
     device_uplinks_df = device_uplinks_df.set_index(['device_addr', 'counter_up'])
@@ -39,7 +46,7 @@ def device_summ_frames(frames_df):
         'dev_eui', 'device_addr', 'counter_up', 'hits',
         'bw_k', 'frequency', 'spreading_factor',
         'datarate', 'frame_size', 'payload_size', 'message_type',
-        'tag1', 'tag2', 'pluscode'
+        'tag1', 'tag2', 'pluscode', 'confirmed', 'ack', 'lora_mac'
     ]
     xfer_cols = [col for col in frames_df.columns if col in xfer_cols]
     xfer_df = pd.DataFrame(frames_df, columns=xfer_cols)
@@ -53,11 +60,11 @@ def device_summ_frames(frames_df):
     # this re-orders
     uplink_cols = [
         'device_addr', 'counter_up', 'missed',
-        'time', 'tgap',
+        'time', 'tgap', 'tgapf',
         'hits', 'msec', 'rssi', 'snr',
         'bw_k', 'frequency',
         'spreading_factor', 'datarate', 'frame_size',
-        'payload_size', 'message_type'
+        'payload_size', 'message_type', 'confirmed', 'ack', 'lora_mac'
     ]
     uplink_cols = [col for col in uplink_cols if col in device_uplinks_df.columns]
     device_uplinks_df = device_uplinks_df[uplink_cols]
@@ -72,6 +79,8 @@ def device_summ_frames(frames_df):
             'frequency': 'freq',
             'frame_size': 'fsize',
             'payload_size': 'psize',
+            'confirmed': 'conf_req',
+            'ack': 'conf_ack'
         }
     )
 
@@ -110,3 +119,20 @@ def getDeviceFreqs(frames_df):
     device_freqs_df.columns = ['freq', 'count']
     device_freqs_df = device_freqs_df.sort_values("freq")
     return device_freqs_df
+
+
+def tstamp2time(t):
+    time, frac = t.split('.')
+    time = pd.to_datetime(int(time), unit='s').tz_localize('UTC')
+    frac = int(f"{frac:<09}") // 1000
+    time = time + timedelta(microseconds=frac)
+    return time
+
+
+def format_timedelta(td):
+    # ic(td)
+    if pd.isna(td) or td is None:
+        return None
+    days = td.days
+    seconds = td.seconds
+    return f"{days}d,{seconds}s"

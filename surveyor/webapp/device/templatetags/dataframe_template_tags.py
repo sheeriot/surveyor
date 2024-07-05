@@ -21,7 +21,7 @@ def convert_data_frame_to_html_table_rows(df):
         row_html = "<tr>"
         for value in row:
             if isinstance(value, pd.Timestamp):
-                row_html += f"<td>{value.strftime('%Y-%m-%d %H:%M:%S(%Z)')}</td>"
+                row_html += f"<td>{value.isoformat(sep=' ', timespec='milliseconds')}</td>"
             else:
                 row_html += f"<td>{value}</td>"
         row_html += "</tr>"
