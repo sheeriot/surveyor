@@ -276,7 +276,6 @@ def packgraph2(request, deveui='', **kwargs):
     ax2 = ax1.twinx()
     ax1.set_zorder(ax2.get_zorder()+1)
     ax1.patch.set_visible(False)
-
     fig.patch.set_facecolor('#ECECEC')
     ax1.set_facecolor('#ECECEC')
 
@@ -327,26 +326,66 @@ def packgraph2(request, deveui='', **kwargs):
         helium_frames_df = pd.DataFrame()
         helium = False
 
+    # Now Downlinks
+    if endnode.downlinks is True:
+        dlmeas = endnode.influx_measurement_downlinks
+        try:
+            downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
+            downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
+            downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
+            context['downlinks_df'] = downlinks_df
+
+        except ValueError as err:
+            console_messages.append(F'{err}')
+            context['downlinks_df'] = pd.DataFrame()
+
+    else:
+        context['downlinks_df'] = pd.DataFrame()
     # plotting
 
     l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
-                     marker='s', color='dodgerblue', s=12, clip_on=False)
+                     marker='o', color='dodgerblue', s=16, clip_on=False)
+    legend_lines = (l2,)
+    legend_text = ('SNR',)
+
     l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'],
-                     marker='*', color='#BF40BF', s=30, clip_on=False)
+                     marker='2', color='green', s=30, clip_on=False)
+    legend_lines = legend_lines + (l1,)
+    legend_text = legend_text + ('RSSI',)
+
     if helium:
         l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'],
                          marker='$H$', c='brown', s=30, clip_on=False)
+        legend_lines = legend_lines + (l6,)
+        legend_text = legend_text + ('Helium',)
 
     missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
-                     marker='^', color='red')
-
-    rejoins_df['mark0'] = 0
-    l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
+                     marker='3', color='crimson',
+                     s=100, clip_on=False
+                     )
+    legend_lines = legend_lines + (l3,)
+    legend_text = legend_text + ('Missed',)
 
     bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
-    bigmiss_df['mark15'] = 15
-    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark15'], marker='^', color='red', s=160, clip_on=False)
+    bigmiss_df['mark'] = 15
+    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark'],
+                marker='x', color='crimson',
+                s=200, clip_on=False
+                )
+
+    if not rejoins_df.empty:
+        rejoins_df['mark'] = 0
+        l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark'], marker='P', color='fuchsia', s=100)
+        legend_lines = legend_lines + (l4,)
+        legend_text = legend_text + ('Join',)
+
+    if endnode.downlinks is True:
+        downlinks_df['mark'] = 15
+        l7 = ax1.scatter(downlinks_df['time'], downlinks_df['mark'],
+                         marker='1', c='orangered', s=40, clip_on=False)
+        legend_lines = legend_lines + (l7,)
+        legend_text = legend_text + ('Downlinks',)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
@@ -364,30 +403,17 @@ def packgraph2(request, deveui='', **kwargs):
     ax2.tick_params(bottom=False)
 
     # legend
-    if helium:
-        fig.legend((l1, l6, l2, l3, l4),
-                   ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
-                   # loc='upper right',
-                   bbox_to_anchor=(0.94, 1.0),
-                   fontsize=8,
-                   title_fontsize=12,
-                   facecolor='azure',
-                   fancybox=True,
-                   framealpha=0.3,
-                   edgecolor='black'
-                   )
-    else:
-        fig.legend((l1, l2, l3, l4),
-                   ('RSSI', 'SNR', 'Miss', 'Join'),
-                   # loc='upper right',
-                   bbox_to_anchor=(0.94, 1.0),
-                   fontsize=8,
-                   title_fontsize=12,
-                   facecolor='azure',
-                   fancybox=True,
-                   framealpha=0.3,
-                   edgecolor='black'
-                   )
+    fig.legend(legend_lines,
+               legend_text,
+               # loc='upper right',
+               bbox_to_anchor=(0.94, 1.0),
+               fontsize=8,
+               title_fontsize=12,
+               facecolor='azure',
+               fancybox=True,
+               framealpha=0.3,
+               edgecolor='black'
+               )
 
     # create grid
     plt.grid(True)
@@ -420,20 +446,6 @@ def packgraph2(request, deveui='', **kwargs):
         graph_freqs_out = getGraph()
         context["graph_freqs_out"] = graph_freqs_out
         plt.close()
-
-    if endnode.downlinks is True:
-        dlmeas = endnode.influx_measurement_downlinks
-        try:
-            downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
-            downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
-            downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
-            context['downlinks_df'] = downlinks_df
-        except ValueError as err:
-            console_messages.append(F'{err}')
-            context['downlinks_df'] = pd.DataFrame()
-
-    else:
-        context['downlinks_df'] = pd.DataFrame()
 
     context['console_messages'] = console_messages
 
