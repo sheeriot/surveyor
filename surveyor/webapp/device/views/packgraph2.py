@@ -383,7 +383,7 @@ def packgraph2(request, deveui='', **kwargs):
     if endnode.downlinks is True:
         downlinks_df['mark'] = 15
         l7 = ax1.scatter(downlinks_df['time'], downlinks_df['mark'],
-                         marker='1', c='orangered', s=40, clip_on=False)
+                         marker='1', c='darkviolet', s=40, clip_on=False)
         legend_lines = legend_lines + (l7,)
         legend_text = legend_text + ('Downlinks',)
 
