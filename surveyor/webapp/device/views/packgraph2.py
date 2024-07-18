@@ -337,50 +337,58 @@ def packgraph2(request, deveui='', **kwargs):
 
         except ValueError as err:
             console_messages.append(F'{err}')
-            context['downlinks_df'] = pd.DataFrame()
+            downlinks_df = pd.DataFrame()
+            context['downlinks_df'] = downlinks_df
 
     else:
         context['downlinks_df'] = pd.DataFrame()
-    # plotting
 
+    # plotting snr
     l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
                      marker='o', color='dodgerblue', s=16, clip_on=False)
     legend_lines = (l2,)
     legend_text = ('SNR',)
 
+    # plotting rssi
     l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'],
                      marker='2', color='green', s=30, clip_on=False)
     legend_lines = legend_lines + (l1,)
     legend_text = legend_text + ('RSSI',)
 
+    # add specific Helium marks
     if helium:
         l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'],
                          marker='$H$', c='brown', s=30, clip_on=False)
         legend_lines = legend_lines + (l6,)
         legend_text = legend_text + ('Helium',)
 
-    missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
+    # mark the misses
+    misses_df = device_uplinks_df[['time', 'missed']]
+    missmarks_df = misses_df.loc[misses_df['missed'] < 15 ]
+
+
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
                      marker='3', color='crimson',
-                     s=100, clip_on=False
+                     s=60, clip_on=False
                      )
     legend_lines = legend_lines + (l3,)
     legend_text = legend_text + ('Missed',)
 
-    bigmiss_df = missmarks_df.loc[missmarks_df['missed'] >= 15]
+    # make big misses for large miss counts
+    bigmiss_df = misses_df.loc[misses_df['missed'] >= 15]
     bigmiss_df['mark'] = 15
     ax1.scatter(bigmiss_df['time'], bigmiss_df['mark'],
-                marker='x', color='crimson',
-                s=200, clip_on=False
+                marker='3', color='crimson', s=200, clip_on=False
                 )
 
+    # mark the rejoins
     if not rejoins_df.empty:
         rejoins_df['mark'] = 0
         l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark'], marker='P', color='fuchsia', s=100)
         legend_lines = legend_lines + (l4,)
         legend_text = legend_text + ('Join',)
 
-    if endnode.downlinks is True:
+    if endnode.downlinks and not downlinks_df.empty:
         downlinks_df['mark'] = 15
         l7 = ax1.scatter(downlinks_df['time'], downlinks_df['mark'],
                          marker='1', c='darkviolet', s=40, clip_on=False)
