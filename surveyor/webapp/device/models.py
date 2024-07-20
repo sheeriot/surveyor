@@ -45,12 +45,13 @@ class BucketDevice(models.Model):
         default=1
     )
     dev_eui = models.CharField(max_length=16)
-    # last_join = models.DateTimeField()
     name = models.CharField(max_length=50, blank=True, default='')
+    report_group = models.CharField(max_length=30, blank=True, default='')
     lat = models.FloatField()
     long = models.FloatField()
     marker = models.CharField(max_length=30, blank=True, default='')
     address = models.CharField(max_length=50, blank=True, default='')
+    # last_join = models.DateTimeField()
     # estimated_rssi = models.IntegerField(blank=True,null=True)
 
     def __str__(self):
