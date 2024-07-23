@@ -10,11 +10,13 @@ from crispy_forms.layout import Layout, Row, Submit, Div, Button, ButtonHolder, 
 
 
 class bucketDevicesForm2(forms.Form):
+
     source = forms.ModelChoiceField(queryset=None, help_text="InfluxDB Source")
-    report_group = forms.ModelChoiceField(queryset=BucketDevice.objects.none(),
-                                          help_text="Select Report Group after Source",
-                                          required=False
-                                          )
+    no_choice = [('None', 'None')]
+    report_group = forms.ChoiceField(choices=no_choice,
+                                     help_text="Bucket Devices > Report Groups",
+                                     required=False,
+                                     )
     meas = forms.CharField(initial='nameme', min_length=2, max_length=20, strip=True, help_text="InfluxDB Measurement")
 
     start = forms.DateTimeField(
@@ -66,10 +68,16 @@ class bucketDevicesForm2(forms.Form):
         if 'source' in self.data:
             try:
                 source_id = int(self.data.get('source'))
-                self.fields['report_group'].queryset = BucketDevice.objects.filter(
-                    influx_source_id=source_id).values('report_group').distinct().order_by('report_group')
+                report_groups = BucketDevice.objects.filter(
+                    influx_source_id=source_id).values_list(
+                        'report_group', flat=True
+                        ).distinct().order_by('report_group')
+                report_groups = list(filter(lambda x: x != '', report_groups))
+                self.fields['report_group'].choices = [('None', 'None')] + [(group, group) for group in report_groups]
             except (ValueError, TypeError):
-                pass  # invalid input from the client
+                self.fields['report_group'].choices = [('None', 'None')]
+        else:
+            self.fields['report_group'].choices = [('None', 'None')]
 
         for fieldname in ['center_latitude', 'center_longitude', 'radius_km']:
             self.fields[fieldname].help_text = None

@@ -12,12 +12,12 @@ import dateutil.tz
 from surveyor.settings import TIME_ZONE
 from surveyor.utils import init_datetime_daysago
 from accounts.models import Person
-from device.models import InfluxSource
-from ..task_createBucketDevicesReport import create_bucketDevicesReport
+from device.models import InfluxSource, BucketDevice
+from ..task_createBucketDevicesReport2 import create_bucketDevicesReport2
 
 from .form_bucketDevicesReport2 import bucketDevicesForm2
 
-from icecream import ic
+# from icecream import ic
 
 
 @login_required
@@ -48,6 +48,7 @@ def bucketDevicesReport2(request, **kwargs):
             end = form.cleaned_data["end"]
             end_zulu = end.astimezone(zulu_tz)
             source = form.cleaned_data["source"]
+            report_group = form.cleaned_data["report_group"]
             meas = form.cleaned_data["meas"]
             center_latitude = form.cleaned_data["center_latitude"]
             center_longitude = form.cleaned_data["center_longitude"]
@@ -103,6 +104,7 @@ def bucketDevicesReport2(request, **kwargs):
             end = form.cleaned_data["end"]
             end_zulu = end.astimezone(zulu_tz)
             source = form.cleaned_data["source"]
+            report_group = form.cleaned_data["report_group"]
             meas = form.cleaned_data["meas"]
             center_latitude = form.cleaned_data["center_latitude"]
             center_longitude = form.cleaned_data["center_longitude"]
@@ -121,8 +123,7 @@ def bucketDevicesReport2(request, **kwargs):
             return render(request, 'performer/bucketdevices_report2.html', context)
 
     elif request.method == 'GET':
-        # a GET with no KWARGS, let's set some defaults and return the form
-        ic("get with no kwargs or submit")
+        # a GET with no KWARGS, no submit, set some defaults and return the form
         start_morning, now = init_datetime_daysago(tz, 3)
         # start, end = init_datetime_daysago(tz, days_ago=7)
         form = bucketDevicesForm2(initial={'start': start_morning, 'end': now}, orgs_list=orgs_list)
@@ -134,9 +135,7 @@ def bucketDevicesReport2(request, **kwargs):
         }
         return render(request, 'performer/bucketdevices_report2.html', context)
 
-    # Form Processing Requested
-
-    # start processing
+    # Form Processing Begins
 
     start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
     end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
@@ -146,6 +145,7 @@ def bucketDevicesReport2(request, **kwargs):
         'form': form,
         'source_name': source.name,
         'source_id': source.id,
+        'report_group': report_group,
         'meas': meas,
         'start': start,
         'end': end,
@@ -153,19 +153,16 @@ def bucketDevicesReport2(request, **kwargs):
         'end_mark': end_mark,
     }
 
-    # if center_latitude is not None and center_longitude is not None:
-    #     context['center_latitude'] = center_latitude
-    #     context['center_longitude'] = center_longitude
-    #     context['radius_km'] = radius_km
-    # else:
-    #     center_latitude = None
-    #     center_longitude = None
-    #     radius_km = None
-
-    async_result = create_bucketDevicesReport.delay(
-        source.id, meas, start_mark, end_mark,
+    async_result = create_bucketDevicesReport2.delay(
+        source.id, 
+        meas, 
+        start_mark, 
+        end_mark,
+        report_group=report_group,
         center=(center_latitude, center_longitude),
-        rings=radius_km, requester=person.username)
+        rings=radius_km,
+        requester=person.username
+        )
 
     task_id = async_result.task_id
     console_messages.append(F'Task ID: {task_id}')
@@ -188,3 +185,15 @@ def getTaskInfo(request):
         return JsonResponse(data)
     else:
         return HttpResponse('No job id given.')
+
+
+def load_report_groups(request):
+    source_id = request.GET.get('source')
+    report_groups = BucketDevice.objects.filter(
+        influx_source_id=source_id).values_list('report_group', flat=True).distinct().order_by('report_group')
+    # remove blank string from list
+    report_groups = list(filter(lambda x: x != '', report_groups))
+    # add None to list
+    report_groups = ['None'] + [group for group in report_groups]
+
+    return JsonResponse(report_groups, safe=False)
