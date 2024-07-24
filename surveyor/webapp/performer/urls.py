@@ -14,6 +14,8 @@ from .ajax_bucketDevicesPdr import bucketDevicesPdr
 
 from .views.popout_map import popoutMap
 
+from .views.bucketDevicesReport2 import bucketDevicesReport2, load_report_groups
+
 urlpatterns = [
     # Task checker
     path('getTaskInfo/', getTaskInfo, name='getTaskInfo'),
@@ -33,4 +35,13 @@ urlpatterns = [
     path('bucketDevicesGwInfo/', bucketDevicesGwInfo, name='bucketDevicesGwInfo'),
     # path('bucketDevicesMapTwo/', bucketDevicesMapTwo, name='bucketDevicesMapTwo'),
     path('bucketDevicesDetails/', bucketDevicesDetails, name='BucketDevicesDetails'),
+
+    # Beta
+    path('bucketDevicesReport2/', bucketDevicesReport2, name='bucketDevicesReport2'),
+    path(
+        'bucketDevicesReport2/<report_group>/<source_id>/<meas>/<start_mark>/<end_mark>/',
+        bucketDevicesReport2,
+        name='bucketDevicesReport2_withTime'
+    ),
+    path('load-report-groups/', load_report_groups, name='load_report_groups'),
 ]

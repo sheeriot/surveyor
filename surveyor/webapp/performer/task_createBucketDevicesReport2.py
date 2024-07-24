@@ -9,19 +9,22 @@ import pandas as pd
 from device.models import BucketDevice
 from device.locate import pluscode2latlon
 
-from .getBucketData import getBucketData
+from .getBucketData2 import getBucketData2
 from surveyor.utils import geoDistance
 
 # from icecream import ic
 
 
 @shared_task
-def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
+def create_bucketDevicesReport2(source_id, meas, start_mark, end_mark, **kwargs):
     task_id = current_task.request.id
     if 'report_group' in kwargs:
         report_group = kwargs.get('report_group')
+    else:
+        report_group = 'None'
+
     start_time = perf_counter()
-    report_status, frames_df = getBucketData(source_id, meas, start_mark, end_mark, report_group)
+    report_status, frames_df = getBucketData2(source_id, meas, start_mark, end_mark, report_group)
     end_time = perf_counter()
     query_time = round(end_time - start_time, 1)
 
@@ -168,7 +171,12 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         device_loc_df = device_loc_df.drop(columns=['pluscode']).set_index('dev_eui')
 
     else:
-        device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(influx_source=source_id).values()))
+        if report_group == 'None':
+            device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(
+                influx_source=source_id).values()))
+        else:
+            device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(
+                influx_source=source_id, report_group=report_group).values()))
         if device_loc_df.shape[0] > 0:
             device_loc_df = device_loc_df.drop(columns=['id', 'influx_source_id'])
             device_loc_df['dev_eui'] = device_loc_df['dev_eui'].str.lower()

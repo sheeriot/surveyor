@@ -25,6 +25,7 @@ from accounts.models import Person
 class ChannelPlanAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
+
 # admin.site.register(ChannelPlan)
 admin.site.register(ChannelPlan, ChannelPlanAdmin)
 
@@ -67,13 +68,15 @@ class BucketDeviceImportForm(forms.Form):
 
 
 class BucketDeviceAdmin(admin.ModelAdmin):
+    fields = ('influx_source', 'dev_eui',
+                    'name', 'report_group', 'marker', 'lat', 'long', 'address')
     list_display = ('influx_source', 'dev_eui',
-                    'name', 'lat', 'long', 'marker', 'address')
+                    'name', 'report_group', 'marker', 'lat', 'long', 'address')
     list_filter = ['influx_source']
-    search_fields = ('dev_eui', 'name', 'address')
-    ordering = ('influx_source', 'name',)
+    search_fields = ('dev_eui', 'name', 'address', 'report_group')
+    ordering = ('influx_source', 'report_group', 'name')
     list_display_links = ["dev_eui", "name"]
-    readonly_fields = ('influx_source', 'dev_eui', 'name',
+    readonly_fields = ('influx_source', 'dev_eui',
                        'lat', 'long', 'address')
 
     def get_urls(self):
@@ -161,6 +164,7 @@ class BucketDeviceAdmin(admin.ModelAdmin):
                 long=row['long'],
                 marker=row['marker'],
                 address=row['address'],
+                report_group=row['report_group'],
             )
             for index, row in device_loc_df.iterrows()
         ]

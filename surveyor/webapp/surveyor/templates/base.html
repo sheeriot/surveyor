@@ -85,16 +85,16 @@
                   <li>
                     <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">
                       <img src="{% static 'BucketView1_200.png' %}" height="50" width="50">
-                      Bucket Report - Devices
+                      Bucket Devices Report
                     </a>
                   </li>
-                  <!-- <div class="dropdown-divider"></div>
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="dropdown-header">Beta...</li>
                   <li>
-                       &gt; Beta reports
+                    <a class="dropdown-item" href="{% url 'bucketDevicesReport2' %}">
+                      Bucket Devices - Report Groups
+                    </a>
                   </li>
-                  <li>
-                    <a class="dropdown-item" href="{% url 'bucketDevicesReport' %}">Bucket Devices Report</a>
-                  </li> -->
                 </ul>
               </li>
             </ul>
@@ -131,12 +131,9 @@
                         Add Device
                       </a>
                     </div>
-                  </li> 
-                  <li>
-                    <div class="d-inline-block float-left">
-                        -- beta --
-                    </div>
                   </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="dropdown-header">Beta...</li>
                   <li>
                     <div class="d-inline-block float-left">
                       <a class="dropdown-item" href="{% url 'packgraph2' %}">
