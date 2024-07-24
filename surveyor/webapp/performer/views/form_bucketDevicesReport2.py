@@ -14,7 +14,7 @@ class bucketDevicesForm2(forms.Form):
     source = forms.ModelChoiceField(queryset=None, help_text="InfluxDB Source")
     no_choice = [('None', 'None')]
     report_group = forms.ChoiceField(choices=no_choice,
-                                     help_text="Bucket Devices > Report Groups",
+                                     help_text="Scope to report_group",
                                      required=False,
                                      )
     meas = forms.CharField(initial='nameme', min_length=2, max_length=20, strip=True, help_text="InfluxDB Measurement")

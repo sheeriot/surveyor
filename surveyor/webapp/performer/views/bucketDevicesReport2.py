@@ -154,9 +154,9 @@ def bucketDevicesReport2(request, **kwargs):
     }
 
     async_result = create_bucketDevicesReport2.delay(
-        source.id, 
-        meas, 
-        start_mark, 
+        source.id,
+        meas,
+        start_mark,
         end_mark,
         report_group=report_group,
         center=(center_latitude, center_longitude),

@@ -67,7 +67,7 @@ def bucketDevicesSummary(request):
             devices_missing = set(devices_withloc) - set(devices_seen)
             # devices_missing_df = [device_loc_df[device_loc_df['dev_eui'].isin(devices_missing)]]
         devices_noloc = set(devices_seen) - set(devices_withloc)
-        
+
         device_counts = {
             'withloc': len(devices_withloc),
             'seen': len(devices_seen),
