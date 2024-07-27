@@ -7,14 +7,14 @@ import dateutil.parser
 import dateutil.tz
 
 from surveyor.settings import TIME_ZONE
-from ..form_endnode2 import endNodeSelect2
+from ..form_endnode import endNodeSelect
 from accounts.models import Person
 from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
 from ..models import EndNode
 from ..getDeviceData import getDeviceFrames, getDownlinks
 from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
 
-from icecream import ic
+# from icecream import ic
 from time import perf_counter
 
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ import pandas as pd
 
 
 @login_required
-def packgraph2(request, deveui='', **kwargs):
+def packgraph(request, deveui='', **kwargs):
     username = request.user
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
@@ -46,7 +46,7 @@ def packgraph2(request, deveui='', **kwargs):
     console_messages.append(F'Local Timezone: {tz}')
 
     if request.method == 'GET' and 'submit' in request.GET:
-        form = endNodeSelect2(request.GET, orgs_list=orgs_list)
+        form = endNodeSelect(request.GET, orgs_list=orgs_list)
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
@@ -71,7 +71,7 @@ def packgraph2(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
             }
-            return render(request, 'device/packgraph2.html', context)
+            return render(request, 'device/packgraph.html', context)
 
     # got some kwargs from URL, but no submit button, process them
     elif request.method == 'GET' and kwargs:
@@ -95,7 +95,7 @@ def packgraph2(request, deveui='', **kwargs):
         else:
             end = end_default
 
-        form = endNodeSelect2({
+        form = endNodeSelect({
             'endnode': endnode_id,
             'start': start,
             'end': end},
@@ -125,12 +125,12 @@ def packgraph2(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
                 }
-            return render(request, 'device/packgraph2.html', context)
+            return render(request, 'device/packgraph.html', context)
 
     elif request.method == 'GET':
 
         start_default, end_default = init_datetime_daysago(tz, 3)
-        form = endNodeSelect2(
+        form = endNodeSelect(
             initial={
                 'start': start_default,
                 'end': end_default},
@@ -141,7 +141,7 @@ def packgraph2(request, deveui='', **kwargs):
             'console_messages': console_messages,
             'results_display': False,
         }
-        return render(request, 'device/packgraph2.html', context)
+        return render(request, 'device/packgraph.html', context)
 
     # ------ being here means we have a valid form ------
     start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
@@ -185,7 +185,7 @@ def packgraph2(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'device/packgraph2.html', context)
+        return render(request, 'device/packgraph.html', context)
 
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
@@ -197,7 +197,7 @@ def packgraph2(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'device/packgraph2.html', context)
+        return render(request, 'device/packgraph.html', context)
 
     context['results_display'] = True
     context['frames_received'] = frames_df.shape[0]
@@ -457,4 +457,4 @@ def packgraph2(request, deveui='', **kwargs):
 
     context['console_messages'] = console_messages
 
-    return render(request, 'device/packgraph2.html', context)
+    return render(request, 'device/packgraph.html', context)

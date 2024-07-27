@@ -9,7 +9,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Submit, Div, Button, ButtonHolder, HTML, Column
 
 
-class bucketDevicesForm2(forms.Form):
+class bucketDevicesForm(forms.Form):
 
     source = forms.ModelChoiceField(queryset=None, help_text="InfluxDB Source")
     no_choice = [('None', 'None')]
@@ -54,12 +54,12 @@ class bucketDevicesForm2(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.orgs_list = kwargs.pop('orgs_list', None)
-        super(bucketDevicesForm2, self).__init__(*args, **kwargs)
+        super(bucketDevicesForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
 
         self.helper.form_id = 'bucketDevicesReportForm'
         self.helper.form_method = 'get'
-        self.helper.form_action = 'bucketDevicesReport2'
+        self.helper.form_action = 'bucketDevicesReport'
 
         self.fields["source"].queryset = InfluxSource.objects.filter(
             surveyor_org__in=self.orgs_list

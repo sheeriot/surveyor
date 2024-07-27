@@ -10,7 +10,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div, Button, ButtonHolder, Field
 
 
-class endNodeSelect2(forms.Form):
+class endNodeSelect(forms.Form):
 
     endnode = forms.ModelChoiceField(queryset=None, help_text="LoRaWAN End Device")
     start = forms.DateTimeField(
@@ -43,11 +43,11 @@ class endNodeSelect2(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.orgs_list = kwargs.pop('orgs_list', None)
-        super(endNodeSelect2, self).__init__(*args, **kwargs)
+        super(endNodeSelect, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper(self)
         self.helper.form_method = 'get'
-        self.helper.form_action = 'packgraph2'
+        self.helper.form_action = 'packgraph'
 
         self.fields["endnode"].queryset = EndNode.objects.filter(
             surveyor_org__in=self.orgs_list

@@ -24,7 +24,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('device/', include('device.urls')),
     path('geowan/', include('geowan.urls')),
-    path('packTrack/', include('packTrack.urls')),
+    # path('packTrack/', include('packTrack.urls')),
     path('climatewan/', include('climatewan.urls')),
     path('tz_detect/', include('tz_detect.urls')),
     path('performer/', include('performer.urls')),

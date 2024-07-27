@@ -56,7 +56,7 @@
         <li class="list-group-item"><strong>Start:</strong><br>{{ start|date:"Y-m-d H:i (e)" }}</li>
         <li class="list-group-item"><strong>End:</strong><br>{{ end|date:"Y-m-d H:i (e)" }}</li>
     </ul>
-    <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices Report</a>
+    <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id report_group='None' meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices Report</a>
 </div>
 <hr>
 {% endif %}

@@ -48,7 +48,7 @@
 
       <td >
         <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
-           href=" {% url 'packGraph' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
+           href=" {% url 'packgraph' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
           <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}"/> </a>
         <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
           href=" {% url 'heatIndex' endnode=data.id start=start_formatted end=end_formatted submit='Submit' %}">
@@ -148,7 +148,7 @@
       <td>{{ node.manufacturer }} {{ node.model }}</td>
       <td>
         <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
-          href=" {% url 'packGraph' endnode=node.id start=start_formatted end=end_formatted submit='Submit' %}">
+          href=" {% url 'packgraph' endnode=node.id start=start_formatted end=end_formatted submit='Submit' %}">
           <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png'%}"/> </a>
       </td>
       <td>

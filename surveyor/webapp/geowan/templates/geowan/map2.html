@@ -32,7 +32,7 @@
 <div class="d-inline">
   &nbsp;&nbsp;
   <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
-    href=" {% url 'packGraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    href=" {% url 'packgraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
     <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}" /> </a>
 
   <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
@@ -274,7 +274,7 @@
       Device: {{ selectNode.name }} ({{ selectNode.dev_eui }}) - {{ selectNode.manufacturer}} {{ selectNode.model}}
     </div>
     <a class="me-1 popup" id="2" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"
-    href=" {% url 'packGraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
+    href=" {% url 'packgraph' endnode=selectNode.id start=start_formatted end=end_formatted submit='Submit' %}">
     <span class="popuptext" id="myPopup2">Packet Tracker</span><img src="{% static 'Packtrack06x25.png' %}" /></a>
 
     <a class="me-1 popup" id="1" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)"

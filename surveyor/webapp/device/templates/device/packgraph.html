@@ -50,8 +50,8 @@
 {% if results_display %}
 <div>
     Requested Report:
-    <a href="{% url 'packgraph2_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
-        {% url 'packgraph2_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
+    <a href="{% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}">
+        {% url 'packgraph_withtimes' endnode_id=endnode.id start_mark=start_mark end_mark=end_mark %}
     </a>
     <ul class="list-group list-group-horizontal-sm">
         <li class="list-group-item">Source:<br>{{ source.name }}</li>
@@ -60,7 +60,7 @@
         <li class="list-group-item">Start:<br>{{ start|date:"Y-m-d H:i (e)" }}</li>
         <li class="list-group-item">End:<br>{{ end|date:"Y-m-d H:i (e)" }}</li>
     </ul>
-    <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices Report</a>
+    <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark report_group='None' %}">All Bucket Devices Report</a>
 </div>
 <hr>
 <h3>Results: PackTrack - All Received Uplinks and Frames</h3>
