@@ -20,7 +20,7 @@ urlpatterns = [
 
     path('bucketDevicesReport/', bucketDevicesReport, name='bucketDevicesReport'),
     path(
-        'bucketDevicesReport/<report_group>/<source_id>/<meas>/<start_mark>/<end_mark>/',
+        'bucketDevicesReport/<source_id>/<report_group>/<meas>/<start_mark>/<end_mark>/',
         bucketDevicesReport,
         name='bucketDevicesReport_withTime'
     ),

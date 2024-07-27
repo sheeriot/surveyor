@@ -49,6 +49,8 @@ def bucketDevicesReport(request, **kwargs):
             end_zulu = end.astimezone(zulu_tz)
             source = form.cleaned_data["source"]
             report_group = form.cleaned_data["report_group"]
+            if report_group == '':
+                report_group = 'None'
             meas = form.cleaned_data["meas"]
             center_latitude = form.cleaned_data["center_latitude"]
             center_longitude = form.cleaned_data["center_longitude"]
