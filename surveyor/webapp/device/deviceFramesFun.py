@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import timedelta
 
-from icecream import ic
+# from icecream import ic
 
 
 def device_summ_frames(frames_df):

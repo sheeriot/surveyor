@@ -5,11 +5,11 @@ import dateutil.parser
 import dateutil.tz
 
 from influxdb_client import InfluxDBClient
-from device.models import InfluxSource
+from device.models import InfluxSource, BucketDevice
 # from icecream import ic
 
 
-def getBucketData(source_id, meas, start_mark, end_mark):
+def getBucketData(source_id, meas, start_mark, end_mark, report_group):
     source = InfluxSource.objects.get(pk=source_id)
     influx_url = f"https://{source.host}"
     zulu_tz = dateutil.tz.gettz('UTC')
@@ -17,10 +17,23 @@ def getBucketData(source_id, meas, start_mark, end_mark):
     start_string = start_zulu.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_zulu = dateutil.parser.parse(end_mark).replace(tzinfo=zulu_tz)
     end_string = end_zulu.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    if report_group == 'None':
+        dev_eui_regex = '.*'
+
+    else:
+        bucket_devices = BucketDevice.objects.filter(influx_source=source, report_group=report_group)
+
+        dev_eui_list = [device.dev_eui for device in bucket_devices]
+
+        dev_eui_list_str = '|'.join([f'{ dev_eui }' for dev_eui in dev_eui_list])
+        dev_eui_regex = f"^({ dev_eui_list_str })$"
+
     influx_query = f'''
         from(bucket: "{source.dbname}")
-            |> range(start: {start_string}, stop: {end_string})
-            |> filter(fn:(r) => r._measurement == "{meas}")
+            |> range(start: {start_string}, stop: { end_string })
+            |> filter(fn:(r) => r._measurement == "{ meas }")
+            |> filter(fn: (r) => r.dev_eui =~ /{ dev_eui_regex }/)
             |> drop(fn: (column) => column =~ /^_(start|stop|measurement)/)
             |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
             |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",

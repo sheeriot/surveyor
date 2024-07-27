@@ -39,7 +39,7 @@ CSRF_TRUSTED_ORIGINS = [
 INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'device.apps.DeviceConfig',
-    'packTrack.apps.PacktrackConfig',
+    # 'packTrack.apps.PacktrackConfig',
     'geowan.apps.GeowanConfig',
     'climatewan.apps.ClimatewanConfig',
     'performer.apps.PerformerConfig',
