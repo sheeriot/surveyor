@@ -51,7 +51,8 @@ def dataframe_to_htmltablerows_withlinks(df):
 
 # def convert_data_frame_to_html_table_rows(df):
 @register.simple_tag
-def dataframe_to_htmltablerows_withlinks2(df, source_id=None, meas=None, start_mark=None, end_mark=None):
+def dataframe_to_htmltablerows_withlinks2(df, source_id=None, report_group=None,
+                                          meas=None, start_mark=None, end_mark=None):
     html = ""
     for index, row in df.iterrows():
         # start a new row
@@ -62,7 +63,9 @@ def dataframe_to_htmltablerows_withlinks2(df, source_id=None, meas=None, start_m
             if isinstance(value, pd.Timestamp):
                 row_html += f"{ value.strftime('%Y-%m-%d %H:%M:%S(%Z)') }"
             elif col.lower() in {'device', 'deveui', 'dev_eui'}:
-                url = reverse('bucketdevice_withtimes', args=[source_id, meas, value, start_mark, end_mark])
+                url = reverse('bucketdevice_withtimes',
+                              args=[source_id, report_group,
+                                    meas, value, start_mark, end_mark])
                 row_html += f"<strong><a href='{ url }' target='_blank'>{ value }</a></strong>"
             else:
                 row_html += f"{ value }"

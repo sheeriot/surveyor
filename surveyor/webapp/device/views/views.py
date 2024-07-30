@@ -67,6 +67,7 @@ def bucketdevice(request, **kwargs):
             end_zulu = end.astimezone(zulu_tz)
             source = form.cleaned_data["source"]
             source_id = source.id
+            report_group = form.cleaned_data["report_group"]
             meas = form.cleaned_data["meas"]
             dev_eui = form.cleaned_data["dev_eui"]
         else:
@@ -103,6 +104,8 @@ def bucketdevice(request, **kwargs):
         if 'source_id' in kwargs:
             source_id = kwargs.pop('source_id')
             source = InfluxSource.objects.get(pk=source_id)
+        if 'report_group' in kwargs:
+            report_group = kwargs.pop('report_group')
         if 'meas' in kwargs:
             meas = kwargs.pop('meas')
         if 'dev_eui' in kwargs:
@@ -112,6 +115,7 @@ def bucketdevice(request, **kwargs):
             {
              'dev_eui': dev_eui,
              'source': source,
+            #  'report_group': report_group,
              'meas': meas,
              'start': start,
              'end': end,
@@ -170,6 +174,7 @@ def bucketdevice(request, **kwargs):
         'dev_eui': dev_eui,
         'source_id': source.id,
         'source_name': source.name,
+        'report_group': report_group,
         'meas': meas,
     }
 

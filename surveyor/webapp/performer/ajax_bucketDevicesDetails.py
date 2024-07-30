@@ -35,6 +35,9 @@ def bucketDevicesDetails(request):
     report_status, totals_dict = task.result
     source_id, meas, start_mark, end_mark = eval(task.args)
 
+    kwargs = eval(task.kwargs)
+    report_group = kwargs['report_group']
+
     # start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
     # end_zulu = dateutil.parser.parse(end_mark).replace(tzinfo=zulu_tz)
 
@@ -109,6 +112,7 @@ def bucketDevicesDetails(request):
 
     context = {
         'source_id': source_id,
+        'report_group': report_group,
         'meas': meas,
         'start_mark': start_mark,
         'end_mark': end_mark,
