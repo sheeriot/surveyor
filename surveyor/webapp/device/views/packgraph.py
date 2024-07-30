@@ -364,8 +364,7 @@ def packgraph(request, deveui='', **kwargs):
 
     # mark the misses
     misses_df = device_uplinks_df[['time', 'missed']]
-    missmarks_df = misses_df.loc[misses_df['missed'].between(1,14) ]
-
+    missmarks_df = misses_df.loc[misses_df['missed'].between(1, 14)]
 
     l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
                      marker='3', color='crimson',

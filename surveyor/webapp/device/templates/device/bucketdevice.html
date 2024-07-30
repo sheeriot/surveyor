@@ -15,8 +15,8 @@
 <hr>
 <div>
     Requested Report:
-    <a href="{% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}">
-        {% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}
+    <a href="{% url 'bucketdevice_withtimes' source_id=source_id report_group=report_group meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}">
+        {% url 'bucketdevice_withtimes' source_id=source_id report_group=report_group meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}
     </a>
     <ul class="list-group list-group-horizontal-sm">
         <li class="list-group-item">Source:<br>{{ source_name }}</li>
@@ -25,7 +25,7 @@
         <li class="list-group-item">Start:<br>{{ start|date:"Y-m-d H:i (e)" }}</li>
         <li class="list-group-item">End:<br>{{ end|date:"Y-m-d H:i (e)" }}</li>
     </ul>
-    Want more devices: <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices</a>
+    Want more devices: <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id report_group=report_group meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices</a>
 </div>
 <hr>
 {% endif %}
