@@ -15,8 +15,8 @@
 <hr>
 <div>
     Requested Report:
-    <a href="{% url 'bucketdevice_withtimes' source_id=source_id report_group=report_group meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}">
-        {% url 'bucketdevice_withtimes' source_id=source_id report_group=report_group meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}
+    <a href="{% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}">
+        {% url 'bucketdevice_withtimes' source_id=source_id meas=meas dev_eui=dev_eui start_mark=start_mark end_mark=end_mark %}
     </a>
     <ul class="list-group list-group-horizontal-sm">
         <li class="list-group-item">Source:<br>{{ source_name }}</li>
@@ -25,7 +25,7 @@
         <li class="list-group-item">Start:<br>{{ start|date:"Y-m-d H:i (e)" }}</li>
         <li class="list-group-item">End:<br>{{ end|date:"Y-m-d H:i (e)" }}</li>
     </ul>
-    Want more devices: <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id report_group=report_group meas=meas start_mark=start_mark end_mark=end_mark %}">All Bucket Devices</a>
+    Report Group: <strong>{{ report_group }}</strong> - Goto <a href="{% url 'bucketDevicesReport_withTime' source_id=source_id report_group=report_group meas=meas start_mark=start_mark end_mark=end_mark %}">Bucket Devices Report</a>
 </div>
 <hr>
 {% endif %}
@@ -199,42 +199,6 @@
     </tbody>
   </table>
 </div>
-
-<hr>
-<h4 id="device-downlinks-section">Device Downlinks</h4>
-{% if downlinks_df.empty %}
-  <p>- No Downlinks</p>
-{% else %}
-<p>
-  <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#device-downlink" aria-expanded="false" aria-controls="device-downlinks">
-   Device Downlinks <i class="bi bi-arrows-expand"></i>
-  </button>
-</p>
-<div class="collapse" id="device-downlinks">
-  <div class="row row-cols-auto">
-    <div class="col">
-      <a class="btn btn-rounded btn-success btn-sm" href="#">
-        <i class="bi bi-arrow-90deg-up"></i> Top
-      </a>
-    </div>
-    <div class="col">
-      <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('device-downlinks-results');">
-        <i class="bi bi-file-spreadsheet"></i> Download CSV
-      </button>
-    </div>
-  </div>
-
-  <table id="device-downlinks-results" class="table table-bordered dt-responsive nowrap w-100">
-    <caption>Downlink Frames - {{ endnode.dev_eui }}</caption>
-    <thead>
-    {{ downlinks_df | convert_data_frame_to_html_table_headers | safe}}
-    </thead>
-    <tbody>
-      {{ downlinks_df | convert_data_frame_to_html_table_rows | safe}}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 
 {% endif %}
 

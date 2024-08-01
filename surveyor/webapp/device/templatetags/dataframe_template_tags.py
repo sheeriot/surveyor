@@ -64,8 +64,8 @@ def dataframe_to_htmltablerows_withlinks2(df, source_id=None, report_group=None,
                 row_html += f"{ value.strftime('%Y-%m-%d %H:%M:%S(%Z)') }"
             elif col.lower() in {'device', 'deveui', 'dev_eui'}:
                 url = reverse('bucketdevice_withtimes',
-                              args=[source_id, report_group,
-                                    meas, value, start_mark, end_mark])
+                              args=[source_id, meas, value,
+                                    start_mark, end_mark])
                 row_html += f"<strong><a href='{ url }' target='_blank'>{ value }</a></strong>"
             else:
                 row_html += f"{ value }"
