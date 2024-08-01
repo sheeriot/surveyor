@@ -51,7 +51,7 @@ def dataframe_to_htmltablerows_withlinks(df):
 
 # def convert_data_frame_to_html_table_rows(df):
 @register.simple_tag
-def dataframe_to_htmltablerows_withlinks2(df, source_id=None, report_group=None,
+def dataframe_to_htmltablerows_withlinks2(df, source_id=None,
                                           meas=None, start_mark=None, end_mark=None):
     html = ""
     for index, row in df.iterrows():
