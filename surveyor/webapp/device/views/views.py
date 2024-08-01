@@ -6,21 +6,22 @@ from django.utils import timezone
 import dateutil.parser
 import dateutil.tz
 
-from surveyor.settings import TIME_ZONE
-from ..models import InfluxSource
-from ..forms import EndNodeForm, bucketDeviceForm
-from ..getDeviceData import getDeviceFrames
-from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
-
-from accounts.models import Person
-from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
-
-from icecream import ic
 from time import perf_counter
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib as mpl
 import pandas as pd
+
+from surveyor.settings import TIME_ZONE
+from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
+
+from ..models import InfluxSource, BucketDevice
+from ..forms import EndNodeForm, bucketDeviceForm
+from ..getDeviceData import getDeviceFrames
+from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
+from accounts.models import Person
+
+from icecream import ic
 
 
 @login_required
@@ -67,7 +68,6 @@ def bucketdevice(request, **kwargs):
             end_zulu = end.astimezone(zulu_tz)
             source = form.cleaned_data["source"]
             source_id = source.id
-            report_group = form.cleaned_data["report_group"]
             meas = form.cleaned_data["meas"]
             dev_eui = form.cleaned_data["dev_eui"]
         else:
@@ -104,10 +104,10 @@ def bucketdevice(request, **kwargs):
         if 'source_id' in kwargs:
             source_id = kwargs.pop('source_id')
             source = InfluxSource.objects.get(pk=source_id)
-        if 'report_group' in kwargs:
-            report_group = kwargs.pop('report_group')
+
         if 'meas' in kwargs:
             meas = kwargs.pop('meas')
+
         if 'dev_eui' in kwargs:
             dev_eui = kwargs.pop('dev_eui')
 
@@ -115,7 +115,6 @@ def bucketdevice(request, **kwargs):
             {
              'dev_eui': dev_eui,
              'source': source,
-            #  'report_group': report_group,
              'meas': meas,
              'start': start,
              'end': end,
@@ -163,6 +162,18 @@ def bucketdevice(request, **kwargs):
     # ------ being here means we have a valid form ------
     start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
     end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
+
+    # get bucket_device with influx_source_id and devEUI
+    bucket_device = BucketDevice.objects.filter(influx_source_id=source_id, dev_eui=dev_eui).first()
+
+    if bucket_device is not None:
+        report_group = bucket_device.report_group
+        if report_group == '':
+            report_group = 'None'
+    else:
+        report_group = 'None'
+
+    # ic(report_group)
 
     context = {
         'goodrequest': True,
@@ -300,10 +311,11 @@ def bucketdevice(request, **kwargs):
     fig.patch.set_facecolor('#ECECEC')
     ax1.set_facecolor('#ECECEC')
 
+    # diff
     fig.suptitle(f"DevEUI:{dev_eui}", fontsize=18, fontweight='bold')
     ax1.set_title(f"RF Uplink Performance: {start.strftime('%Y-%m-%d %H:%M')} to {end.strftime('%Y-%m-%d %H:%M')}")
 
-    ax1.set_ylabel("NR/Misses")
+    ax1.set_ylabel("SNR/Misses")
     ax1.set_xlabel("RX Time")
     ax2.set_ylabel("RSSI")
 
@@ -348,23 +360,74 @@ def bucketdevice(request, **kwargs):
         helium_frames_df = pd.DataFrame()
         helium = False
 
-    # plotting
+    # Now Downlinks
+    # if endnode.downlinks is True:
+    #     dlmeas = endnode.influx_measurement_downlinks
+    #     try:
+    #         downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
+    #         downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
+    #         downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
+    #         context['downlinks_df'] = downlinks_df
 
-    l2 = ax1.scatter(frames_df['time'], frames_df['snr'], marker='s', color='dodgerblue', s=12)
-    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'], marker='*', color='#BF40BF', s=30)
+    #     except ValueError as err:
+    #         console_messages.append(F'{err}')
+    #         downlinks_df = pd.DataFrame()
+    #         context['downlinks_df'] = downlinks_df
+
+    # else:
+        # context['downlinks_df'] = pd.DataFrame()
+
+    # plotting snr
+    l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
+                     marker='o', color='dodgerblue', s=16, clip_on=False)
+    legend_lines = (l2,)
+    legend_text = ('SNR',)
+
+    # plotting rssi
+    l1 = ax2.scatter(everynet_frames_df['time'], everynet_frames_df['rssi'],
+                     marker='2', color='green', s=30, clip_on=False)
+    legend_lines = legend_lines + (l1,)
+    legend_text = legend_text + ('RSSI',)
+
+    # add specific Helium marks
     if helium:
-        l5 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'], marker='$H$', c='brown', s=30)
+        l6 = ax2.scatter(helium_frames_df['time'], helium_frames_df['rssi'],
+                         marker='$H$', c='brown', s=30, clip_on=False)
+        legend_lines = legend_lines + (l6,)
+        legend_text = legend_text + ('Helium',)
 
-    missmarks_df = device_uplinks_df.loc[device_uplinks_df['missed'] > 0]
-    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'], marker='^', color='red')
+    # mark the misses
+    misses_df = device_uplinks_df[['time', 'missed']]
+    missmarks_df = misses_df.loc[misses_df['missed'].between(1, 14)]
 
-    rejoins_df['mark0'] = 0
-    l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark0'], marker='P', color='fuchsia', s=10**2)
+    l3 = ax1.scatter(missmarks_df['time'], missmarks_df['missed'],
+                     marker='3', color='crimson',
+                     s=60, clip_on=False
+                     )
+    legend_lines = legend_lines + (l3,)
+    legend_text = legend_text + ('Missed',)
 
-    bigmiss_df = device_uplinks_df.copy().loc[device_uplinks_df['missed'] >= 14]
-    bigmiss_df['mark14'] = 14
+    # make big misses for large miss counts
+    bigmiss_df = misses_df.loc[misses_df['missed'] >= 15]
+    bigmiss_df['mark'] = 15
+    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark'],
+                marker='3', color='crimson', s=200, clip_on=False
+                )
 
-    ax1.scatter(bigmiss_df['time'], bigmiss_df['mark14'], marker='^', color='red', s=200)
+    # mark the rejoins
+    if not rejoins_df.empty:
+        rejoins_df['mark'] = 0
+        l4 = ax1.scatter(rejoins_df['time'], rejoins_df['mark'], marker='P', color='fuchsia', s=100)
+        legend_lines = legend_lines + (l4,)
+        legend_text = legend_text + ('Join',)
+
+    # add downlinks later
+    # if endnode.downlinks and not downlinks_df.empty:
+    #     downlinks_df['mark'] = 15
+    #     l7 = ax1.scatter(downlinks_df['time'], downlinks_df['mark'],
+    #                      marker='1', c='darkviolet', s=40, clip_on=False)
+    #     legend_lines = legend_lines + (l7,)
+    #     legend_text = legend_text + ('Downlinks',)
 
     # remove border lines
     ax1.spines['right'].set_visible(False)
@@ -383,30 +446,17 @@ def bucketdevice(request, **kwargs):
     ax2.tick_params(bottom=False)
 
     # legend
-    if helium:
-        fig.legend((l1, l5, l2, l3, l4),
-                   ('RSSI', 'Helium', 'SNR', 'Miss', 'Join'),
-                   # loc='upper right',
-                   bbox_to_anchor=(0.94, 1.0),
-                   fontsize=8,
-                   title_fontsize=12,
-                   facecolor='azure',
-                   fancybox=True,
-                   framealpha=0.3,
-                   edgecolor='black'
-                   )
-    else:
-        fig.legend((l1, l2, l3, l4),
-                   ('RSSI', 'SNR', 'Miss', 'Join'),
-                   # loc='upper right',
-                   bbox_to_anchor=(0.94, 1.0),
-                   fontsize=8,
-                   title_fontsize=12,
-                   facecolor='azure',
-                   fancybox=True,
-                   framealpha=0.3,
-                   edgecolor='black'
-                   )
+    fig.legend(legend_lines,
+               legend_text,
+               # loc='upper right',
+               bbox_to_anchor=(0.94, 1.0),
+               fontsize=8,
+               title_fontsize=12,
+               facecolor='azure',
+               fancybox=True,
+               framealpha=0.3,
+               edgecolor='black'
+               )
 
     # create grid
     plt.grid(True)
@@ -440,10 +490,8 @@ def bucketdevice(request, **kwargs):
         context["graph_freqs_out"] = graph_freqs_out
         plt.close()
 
-    # ready for return to viewer
-
     # downlinks coming. Empty dataframe for now
-    context['downlinks_df'] = pd.DataFrame()
+    # context['downlinks_df'] = pd.DataFrame()
 
     context['console_messages'] = console_messages
 
