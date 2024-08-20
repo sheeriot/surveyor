@@ -294,15 +294,24 @@ def popoutMap(request, task_id=None):
                     SNR Mean: { row['snr_mean'] } (s:{ row['snr_std'] })<br>
                     Received: { row['frame_count'] } of { row['uplinks_total'] }
                 """
-                gw_rssi_layer.add_child(folium.Marker(
+                gw_rssi_layer.add_child(folium.CircleMarker(
                     location=(row['lat'], row['long']),
+                    radius=4,
+                    color=row['rssi_color'],
+                    fill=True,
+                    fill_color=row['rssi_color'],
+                    fill_opacity=0.7,
                     popup=popup,
-                    icon=folium.Icon(
-                        icon='circle',
-                        prefix='fa',
-                        icon_color=row['rssi_color']
-                    )
                 ))
+                # gw_rssi_layer.add_child(folium.Marker(
+                #     location=(row['lat'], row['long']),
+                #     popup=popup,
+                #     icon=folium.Icon(
+                #         icon='circle',
+                #         prefix='fa',
+                #         icon_color=row['rssi_color']
+                #     )
+                # ))
                 # gw_snr_layer.add_child(folium.Marker(
                 #     location=(row['lat'], row['long']),
                 #     popup=f" \
