@@ -5,16 +5,26 @@ from .models import InfluxSource
 import pandas as pd
 from .deviceFramesFun import tstamp2time
 
+from .getDeviceFramesV3 import getDeviceFramesV3
+
 
 def getDeviceFrames(source_id, meas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
+    influx_v3 = source.influx_v3
+
+    # if a v3 source, divert to the new getDeviceFramesV3
+    if influx_v3:
+        frames_df = getDeviceFramesV3(source_id, meas, dev_eui, start, end)
+        return frames_df
 
     influx_org = source.influx_org
     influx_bucket = source.dbname
     influx_token = source.influx_token
     influx_url = f'https://{source.host}'
+
     start_string = start.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_string = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     influx_query = f"""
         from(bucket: "{influx_bucket}")
         |> range(start: {start_string}, stop: {end_string})
@@ -37,7 +47,8 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         influx_pdf = client.query_api().query_data_frame(org=influx_org, query=influx_query)
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
-    # ic(query_time)
+    ic(query_time)
+
     # this normalizes the list into a DF by adding missing columns and appending
     if type(influx_pdf) is list:
         append_flag = False
@@ -140,6 +151,8 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         })
 
     frames_df = frames_df.reset_index(drop=True)
+
+    ic(frames_df.info())
     return frames_df
 
 
@@ -167,12 +180,12 @@ def getDownlinks(source_id, dlmeas, dev_eui, start, end):
     #     "gw_latitude","gw_longitude",
     #     "message_type","tag1","tag2","pluscode", "helium"])
 
-    start_timer = perf_counter()
+    # start_timer = perf_counter()
 
     with InfluxDBClient(url=influx_url, token=influx_token, org=influx_org) as client:
         influx_pdf = client.query_api().query_data_frame(org=influx_org, query=influx_query)
-    stop_timer = perf_counter()
-    query_time = round(stop_timer - start_timer, 1)
+    # stop_timer = perf_counter()
+    # query_time = round(stop_timer - start_timer, 1)
     # ic(query_time)
 
     # this normalizes a list of DF into a single DF by adding missing columns and appending

@@ -89,6 +89,8 @@ class InfluxSource(models.Model):
 
     influx_org = models.CharField(max_length=30, null=False, blank=True, default='')
     influx_token = models.CharField(max_length=100, null=False, blank=True, default='')
+    
+    influx_v3 = models.BooleanField(default=False)
 
     channel_plan = models.ForeignKey(
         'ChannelPlan',

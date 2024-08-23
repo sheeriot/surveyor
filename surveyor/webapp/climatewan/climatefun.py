@@ -2,11 +2,21 @@
 # from icecream import ic
 from influxdb_client import InfluxDBClient
 from device.models import InfluxSource
+from .climatefunV3 import getInfluxClimateDataV3
+
 import pandas as pd
 
 
 def getInfluxClimateData(source_id, meas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
+
+    influx_v3 = source.influx_v3
+
+    # if a v3 source, divert to the new getDeviceFramesV3
+    if influx_v3:
+        frames_df = getInfluxClimateDataV3(source_id, meas, dev_eui, start, end)
+        return frames_df
+
     influx_org = source.influx_org
     influx_bucket = source.dbname
     influx_token = source.influx_token
