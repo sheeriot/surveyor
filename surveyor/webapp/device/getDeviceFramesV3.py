@@ -22,9 +22,9 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
     influx_url = f'https://{source.host}'
 
     start_string = start.strftime("%Y-%m-%dT%H:%M:%SZ")
-    ic(start_string)
+    # ic(start_string)
     end_string = end.strftime("%Y-%m-%dT%H:%M:%SZ")
-    ic(end_string)
+    # ic(end_string)
 
     # influx_query = f"""
     #     from(bucket: "{influx_bucket}")
@@ -58,7 +58,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
             AND time <= '{ end_string }'
         """
 
-    ic(influx_query)
+    # ic(influx_query)
     start_timer = perf_counter()
 
     with InfluxDBClient3(token=influx_token,
@@ -68,7 +68,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
         reader = client.query(query=influx_query, language="influxql")
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
-    ic(query_time)
+    # ic(query_time)
     influx_pdf = reader.to_pandas()
 
     if influx_pdf.empty:
@@ -147,7 +147,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
 
     frames_df = frames_df.reset_index(drop=True)
 
-    ic(frames_df.info())
+    # ic(frames_df.info())
     return frames_df
 
 

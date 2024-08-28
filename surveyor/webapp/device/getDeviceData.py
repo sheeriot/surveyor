@@ -47,7 +47,7 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
         influx_pdf = client.query_api().query_data_frame(org=influx_org, query=influx_query)
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
-    ic(query_time)
+    # ic(query_time)
 
     # this normalizes the list into a DF by adding missing columns and appending
     if type(influx_pdf) is list:
@@ -152,7 +152,7 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
 
     frames_df = frames_df.reset_index(drop=True)
 
-    ic(frames_df.info())
+    # ic(frames_df.info())
     return frames_df
 
 
