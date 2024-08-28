@@ -1,12 +1,20 @@
+from influxdb_client import InfluxDBClient
+import pandas as pd
+
+from device.models import InfluxSource
+from .getGeowanDataV3 import getGeowanFramesV3
+
 # from time import perf_counter
 # from icecream import ic
-from influxdb_client import InfluxDBClient
-from device.models import InfluxSource
-import pandas as pd
 
 
 def getGeowanFrames(source_id, meas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
+    influx_v3 = source.influx_v3
+    # if a v3 source, divert to the new getDeviceFramesV3
+    if influx_v3:
+        frames_df = getGeowanFramesV3(source_id, meas, dev_eui, start, end)
+        return frames_df
 
     influx_org = source.influx_org
     influx_bucket = source.dbname

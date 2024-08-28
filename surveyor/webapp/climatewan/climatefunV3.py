@@ -1,10 +1,10 @@
 # from time import perf_counter
-from icecream import ic
+# from icecream import ic
 # from influxdb_client import InfluxDBClient
 from influxdb_client_3 import InfluxDBClient3
 from device.models import InfluxSource
 import pandas as pd
-from time import perf_counter
+# from time import perf_counter
 
 
 def getInfluxClimateDataV3(source_id, meas, dev_eui, start, end):
@@ -31,15 +31,15 @@ def getInfluxClimateDataV3(source_id, meas, dev_eui, start, end):
         """
 
     # ic(influx_query)
-    start_timer = perf_counter()
+    # start_timer = perf_counter()
 
     with InfluxDBClient3(token=influx_token,
                          host=influx_url,
                          org=influx_org,
                          database=influx_bucket) as client:
         reader = client.query(query=influx_query, language="influxql")
-    stop_timer = perf_counter()
-    query_time = round(stop_timer - start_timer, 1)
+    # stop_timer = perf_counter()
+    # query_time = round(stop_timer - start_timer, 1)
     # ic(query_time)
     influx_pdf = reader.to_pandas()
 

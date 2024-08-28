@@ -5,7 +5,7 @@ from .models import InfluxSource
 import pandas as pd
 from .deviceFramesFun import tstamp2time
 
-from .getDeviceFramesV3 import getDeviceFramesV3
+from .getDeviceFramesV3 import getDeviceFramesV3, getDownlinksV3
 
 
 def getDeviceFrames(source_id, meas, dev_eui, start, end):
@@ -158,6 +158,14 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
 
 def getDownlinks(source_id, dlmeas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
+
+    source = InfluxSource.objects.get(pk=source_id)
+    influx_v3 = source.influx_v3
+
+    # if a v3 source, divert to the new getDeviceFramesV3
+    if influx_v3:
+        frames_df = getDeviceFramesV3(source_id, dlmeas, dev_eui, start, end)
+        return frames_df
 
     influx_org = source.influx_org
     influx_bucket = source.dbname
