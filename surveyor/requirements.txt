@@ -1,4 +1,4 @@
-django==5.0.6
+django==5.1
 django-csp
 # django-password-validators
 django_bootstrap_icons
@@ -8,6 +8,7 @@ django-mathfilters
 django-tz-detect
 folium
 influxdb-client
+influxdb3-python
 matplotlib
 pandas==2.2.2
 requests

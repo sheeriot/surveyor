@@ -4,18 +4,17 @@ from influxdb_client import InfluxDBClient
 from .models import InfluxSource
 import pandas as pd
 from .deviceFramesFun import tstamp2time
+from influxdb_client_3 import InfluxDBClient3
 
-from .getDeviceFramesV3 import getDeviceFramesV3, getDownlinksV3
 
-
-def getDeviceFrames(source_id, meas, dev_eui, start, end):
+def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
     influx_v3 = source.influx_v3
 
-    # if a v3 source, divert to the new getDeviceFramesV3
-    if influx_v3:
-        frames_df = getDeviceFramesV3(source_id, meas, dev_eui, start, end)
-        return frames_df
+    # add - raise an error if bad
+    if not influx_v3:
+        # return error = "bad"
+        return pd.DataFrame()
 
     influx_org = source.influx_org
     influx_bucket = source.dbname
@@ -23,61 +22,58 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     influx_url = f'https://{source.host}'
 
     start_string = start.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # ic(start_string)
     end_string = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # ic(end_string)
+
+    # influx_query = f"""
+    #     from(bucket: "{influx_bucket}")
+    #     |> range(start: {start_string}, stop: {end_string})
+    #     |> filter(fn:(r) => r._measurement == "{meas}" and r.dev_eui == "{dev_eui}")
+    #     |> drop(fn: (column) => column =~ /^_(start|stop|measurement)/)
+    #     |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
+    #     |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",
+    #         "rx_time","rcv_time","device_addr","counter_up",
+    #         "confirmed", "ack", "lora_mac",
+    #         "duplicate","frame_size","payload_size",
+    #         "bandwidth","datarate","spreading_factor",
+    #         "rssi","snr","frequency",
+    #         "gw_latitude","gw_longitude",
+    #         "message_type","tag1","tag2","pluscode", "helium"])
+    #     """
 
     influx_query = f"""
-        from(bucket: "{influx_bucket}")
-        |> range(start: {start_string}, stop: {end_string})
-        |> filter(fn:(r) => r._measurement == "{meas}" and r.dev_eui == "{dev_eui}")
-        |> drop(fn: (column) => column =~ /^_(start|stop|measurement)/)
-        |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
-        |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",
-            "rx_time","rcv_time","device_addr","counter_up",
-            "confirmed", "ack", "lora_mac",
-            "duplicate","frame_size","payload_size",
-            "bandwidth","datarate","spreading_factor",
-            "rssi","snr","frequency",
-            "gw_latitude","gw_longitude",
-            "message_type","tag1","tag2","pluscode", "helium"])
+        SELECT _time,gateway,
+            rx_time,device_addr,counter_up,
+            confirmed, ack, lora_mac,
+            duplicate,frame_size,payload_size,
+            bandwidth,datarate,spreading_factor,
+            rssi,snr,frequency,
+            gw_latitude,gw_longitude,
+            message_type,tag1,tag2,pluscode,helium
+        FROM { meas }
+        WHERE
+            dev_eui = '{ dev_eui }'
+            AND time >= '{ start_string }'
+            AND time <= '{ end_string }'
         """
 
+    # ic(influx_query)
     start_timer = perf_counter()
 
-    with InfluxDBClient(url=influx_url, token=influx_token, org=influx_org) as client:
-        influx_pdf = client.query_api().query_data_frame(org=influx_org, query=influx_query)
+    with InfluxDBClient3(token=influx_token,
+                         host=influx_url,
+                         org=influx_org,
+                         database=influx_bucket) as client:
+        reader = client.query(query=influx_query, language="influxql")
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
     # ic(query_time)
-
-    # this normalizes the list into a DF by adding missing columns and appending
-    if type(influx_pdf) is list:
-        append_flag = False
-        df_list = influx_pdf
-        columns_set = set([col for df in df_list for col in df.columns])
-
-        frames_df = pd.DataFrame()
-        for df in df_list:
-            missing_cols = columns_set - set(df.columns)
-            df = df.reindex(columns=df.columns.tolist() + list(missing_cols))
-            if append_flag:
-                frames_df = pd.concat([frames_df, df], axis=0)
-            else:
-                frames_df = df
-                append_flag = True
-        influx_pdf = frames_df.reset_index(drop=True)
+    influx_pdf = reader.to_pandas()
 
     if influx_pdf.empty:
         raise ValueError(F"Dataframe is Empty - check measurement name: {meas}")
 
-    # try/catch error
-    try:
-        influx_pdf = influx_pdf.drop(columns=['result', 'table'])
-    except influx_pdf.DoesNotExist:
-        raise ValueError(F"No Result/Table: {meas}")
-
-    # use rx_time (or  rcv_time) if available - gateway time?
-    if 'rx_time' not in influx_pdf.columns and 'rcv_time' in influx_pdf.columns:
-        influx_pdf = influx_pdf.rename(columns={'rcv_time': 'rx_time'})
     if 'rx_time' in influx_pdf.columns:
         # Saved fields are always UTC. Make it timezone aware
         influx_pdf['time'] = pd.to_datetime(influx_pdf['rx_time'], unit='s').dt.tz_localize('UTC')
@@ -88,11 +84,8 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
 
     influx_pdf = influx_pdf.drop(columns=['_time'])
 
-    # might be named gateway_eui
-    if 'gateway' not in influx_pdf.columns and 'gateway_eui' in influx_pdf.columns:
-        influx_pdf = influx_pdf.rename(columns={'gateway_eui': 'gateway'})
     if 'device_addr' not in influx_pdf.columns:
-        influx_pdf['device_addr'] = 'not'
+        influx_pdf['device_addr'] = 'NA'
 
     # take a copy sorted by time
     # now on 'time'
@@ -102,6 +95,8 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     # frames_df['helium'] = frames_df['helium'].astype('boolean')
     if 'helium' in frames_df.columns:
         frames_df['helium'] = frames_df['helium'].isin([True, 1.0, '1.0', 1])
+        if not frames_df['helium'].any():
+            frames_df = frames_df.drop(columns=['helium'])
 
     # drop the zeros in bandwidth
     if 'bandwidth' in frames_df.columns:
@@ -156,16 +151,8 @@ def getDeviceFrames(source_id, meas, dev_eui, start, end):
     return frames_df
 
 
-def getDownlinks(source_id, dlmeas, dev_eui, start, end):
+def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
     source = InfluxSource.objects.get(pk=source_id)
-
-    source = InfluxSource.objects.get(pk=source_id)
-    influx_v3 = source.influx_v3
-
-    # if a v3 source, divert to the new getDeviceFramesV3
-    if influx_v3:
-        frames_df = getDeviceFramesV3(source_id, dlmeas, dev_eui, start, end)
-        return frames_df
 
     influx_org = source.influx_org
     influx_bucket = source.dbname
