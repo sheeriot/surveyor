@@ -164,7 +164,7 @@ def getDownlinks(source_id, dlmeas, dev_eui, start, end):
 
     # if a v3 source, divert to the new getDeviceFramesV3
     if influx_v3:
-        frames_df = getDeviceFramesV3(source_id, dlmeas, dev_eui, start, end)
+        frames_df = getDownlinksV3(source_id, dlmeas, dev_eui, start, end)
         return frames_df
 
     influx_org = source.influx_org

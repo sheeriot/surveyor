@@ -12,7 +12,7 @@ from device.locate import pluscode2latlon
 from .getBucketData import getBucketData
 from surveyor.utils import geoDistance
 
-# from icecream import ic
+from icecream import ic
 
 
 @shared_task
@@ -74,13 +74,15 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     # add the dev_eui to the head of tag_cols
     tag_cols.insert(0, 'dev_eui')
 
+    # ic(frames_df.info())
+    
     # copy out the tags subset
     device_tags_df = frames_df[tag_cols].copy().drop_duplicates(subset=['dev_eui']).set_index('dev_eui')
     device_uplink_list = frames_df.groupby(["dev_eui", "device_addr", "counter_up"], as_index=False).agg(
         uplink_hits=pd.NamedAgg(column="counter_up", aggfunc="count"),
-        uplink_first=pd.NamedAgg(column="_time", aggfunc="min"),
-        uplink_last=pd.NamedAgg(column="_time", aggfunc="max"),
-        uplink_diff=pd.NamedAgg(column="_time", aggfunc=lambda t: (t.max() - t.min()).microseconds / 1000)
+        uplink_first=pd.NamedAgg(column="time", aggfunc="min"),
+        uplink_last=pd.NamedAgg(column="time", aggfunc="max"),
+        uplink_diff=pd.NamedAgg(column="time", aggfunc=lambda t: (t.max() - t.min()).microseconds / 1000)
     )
     # create an order for the device_addr (joins)
     ordered_addrs = device_uplink_list.sort_values(["dev_eui", "uplink_first"])["device_addr"].unique()
@@ -97,8 +99,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         frames_received=pd.NamedAgg(column='counter_up', aggfunc='count'),
         gateways=pd.NamedAgg(column='gateway', aggfunc=lambda j: j.nunique()),
         join_seqs=pd.NamedAgg(column='device_addr', aggfunc=lambda j: j.nunique()),
-        frame_first=pd.NamedAgg(column='_time', aggfunc='min'),
-        frame_last=pd.NamedAgg(column='_time', aggfunc='max'),
+        frame_first=pd.NamedAgg(column='time', aggfunc='min'),
+        frame_last=pd.NamedAgg(column='time', aggfunc='max'),
     )
 
     # add summary data from uplinks

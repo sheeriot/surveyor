@@ -6,11 +6,20 @@ import dateutil.tz
 
 from influxdb_client import InfluxDBClient
 from device.models import InfluxSource, BucketDevice
+from .getBucketDataV3 import getBucketDataV3
+
 # from icecream import ic
 
 
 def getBucketData(source_id, meas, start_mark, end_mark, report_group):
     source = InfluxSource.objects.get(pk=source_id)
+    influx_v3 = source.influx_v3
+
+    # if a v3 source, divert to the new getDeviceFramesV3
+    if influx_v3:
+        query_results, pdf = getBucketDataV3(source_id, meas, start_mark, end_mark, report_group)
+        return query_results, pdf
+
     influx_url = f"https://{source.host}"
     zulu_tz = dateutil.tz.gettz('UTC')
     start_zulu = dateutil.parser.parse(start_mark).replace(tzinfo=zulu_tz)
@@ -85,10 +94,11 @@ def getBucketData(source_id, meas, start_mark, end_mark, report_group):
     if 'gateway' not in influx_pdf.columns and 'gateway_eui' in influx_pdf.columns:
         influx_pdf = influx_pdf.rename(columns={'gateway_eui': 'gateway'})
     if 'device_addr' not in influx_pdf.columns:
-        influx_pdf['device_addr'] = 'not'
+        influx_pdf['device_addr'] = 'NA'
 
+    influx_pdf = influx_pdf.rename(columns={'_time': 'time'})
     # make a copy for return
-    pdf = influx_pdf.copy().sort_values(by=['dev_eui', '_time']).reset_index(drop=True)
+    pdf = influx_pdf.copy().sort_values(by=['dev_eui', 'time']).reset_index(drop=True)
 
     # Setup Data Types in dataframe
     pdf = pdf.astype({
