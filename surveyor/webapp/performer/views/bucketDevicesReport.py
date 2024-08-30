@@ -138,7 +138,6 @@ def bucketDevicesReport(request, **kwargs):
         return render(request, 'performer/bucketdevices_report.html', context)
 
     # Form Processing Begins
-
     start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
     end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
 

@@ -1,5 +1,5 @@
-from influxdb_client_3 import InfluxDBClient3
 import pandas as pd
+from influxdb_client_3 import InfluxDBClient3
 
 from .models import InfluxSource
 from .deviceFramesFun import tstamp2time
@@ -9,7 +9,7 @@ from icecream import ic
 
 
 def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
-    ic('Get Device Frames V3')
+    # ic('Get Device Frames V3')
     source = InfluxSource.objects.get(pk=source_id)
     influx_v3 = source.influx_v3
 
@@ -29,7 +29,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
     # ic(end_string)
 
     influx_query = f"""
-        SELECT _time,gateway,
+        SELECT gateway,
             rx_time,device_addr,counter_up,
             confirmed, ack, lora_mac,
             duplicate,frame_size,payload_size,
@@ -135,7 +135,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
 
 
 def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
-    ic('Get Downlinks V3')
+    # ic('Get Downlinks V3')
     source = InfluxSource.objects.get(pk=source_id)
 
     influx_org = source.influx_org
@@ -225,7 +225,7 @@ def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
         frames_df = frames_df.astype({
             'port': 'category'
         })
-    ic(frames_df.info())
+    # ic(frames_df.info())
     # this re-orders, and filters column names
     downlink_cols = [
         'time', 'tx_time', 'counter_down', 'gateway', 'confirmed', 'ack',
@@ -251,5 +251,5 @@ def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
 
     frames_df = frames_df.reset_index(drop=True)
 
-    ic(frames_df.info())
+    # ic(frames_df.info())
     return frames_df
