@@ -23,7 +23,7 @@ def getInfluxClimateDataV3(source_id, meas, dev_eui, start, end):
         SELECT _time,rx_time,rcv_time,
             temperature,humidity,
             battery_voltage,battery_level
-        FROM { meas }
+        FROM "{ meas }"
         WHERE
             dev_eui = '{ dev_eui }'
             AND time >= '{ start_string }'

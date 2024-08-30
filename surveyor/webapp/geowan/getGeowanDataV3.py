@@ -28,7 +28,7 @@ def getGeowanFramesV3(source_id, meas, dev_eui, start, end):
             rssi,snr,frequency,
             gw_latitude,gw_longitude,helium,
             tag1,tag2
-        FROM { meas }
+        FROM "{ meas }"
         WHERE
             dev_eui = '{ dev_eui }'
             AND time >= '{ start_string }'
@@ -48,7 +48,7 @@ def getGeowanFramesV3(source_id, meas, dev_eui, start, end):
 
     influx_pdf = reader.to_pandas()
 
-    ic(influx_pdf.info())
+    # ic(influx_pdf.info())
 
     if influx_pdf.empty:
         raise ValueError(F"Dataframe is Empty - check measurement name: {meas}")

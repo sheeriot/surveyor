@@ -1,13 +1,15 @@
-from time import perf_counter
-from icecream import ic
-from influxdb_client import InfluxDBClient
-from .models import InfluxSource
-import pandas as pd
-from .deviceFramesFun import tstamp2time
 from influxdb_client_3 import InfluxDBClient3
+import pandas as pd
+
+from .models import InfluxSource
+from .deviceFramesFun import tstamp2time
+
+# from time import perf_counter
+from icecream import ic
 
 
 def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
+    ic('Get Device Frames V3')
     source = InfluxSource.objects.get(pk=source_id)
     influx_v3 = source.influx_v3
 
@@ -26,22 +28,6 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
     end_string = end.strftime("%Y-%m-%dT%H:%M:%SZ")
     # ic(end_string)
 
-    # influx_query = f"""
-    #     from(bucket: "{influx_bucket}")
-    #     |> range(start: {start_string}, stop: {end_string})
-    #     |> filter(fn:(r) => r._measurement == "{meas}" and r.dev_eui == "{dev_eui}")
-    #     |> drop(fn: (column) => column =~ /^_(start|stop|measurement)/)
-    #     |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
-    #     |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",
-    #         "rx_time","rcv_time","device_addr","counter_up",
-    #         "confirmed", "ack", "lora_mac",
-    #         "duplicate","frame_size","payload_size",
-    #         "bandwidth","datarate","spreading_factor",
-    #         "rssi","snr","frequency",
-    #         "gw_latitude","gw_longitude",
-    #         "message_type","tag1","tag2","pluscode", "helium"])
-    #     """
-
     influx_query = f"""
         SELECT _time,gateway,
             rx_time,device_addr,counter_up,
@@ -51,7 +37,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
             rssi,snr,frequency,
             gw_latitude,gw_longitude,
             message_type,tag1,tag2,pluscode,helium
-        FROM { meas }
+        FROM "{ meas }"
         WHERE
             dev_eui = '{ dev_eui }'
             AND time >= '{ start_string }'
@@ -59,17 +45,19 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
         """
 
     # ic(influx_query)
-    start_timer = perf_counter()
+    # start_timer = perf_counter()
 
     with InfluxDBClient3(token=influx_token,
                          host=influx_url,
                          org=influx_org,
                          database=influx_bucket) as client:
         reader = client.query(query=influx_query, language="influxql")
-    stop_timer = perf_counter()
-    query_time = round(stop_timer - start_timer, 1)
+    # stop_timer = perf_counter()
+    # query_time = round(stop_timer - start_timer, 1)
     # ic(query_time)
     influx_pdf = reader.to_pandas()
+
+    influx_pdf = influx_pdf.dropna(axis=1, how='all')
 
     if influx_pdf.empty:
         raise ValueError(F"Dataframe is Empty - check measurement name: {meas}")
@@ -78,11 +66,6 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
         # Saved fields are always UTC. Make it timezone aware
         influx_pdf['time'] = pd.to_datetime(influx_pdf['rx_time'], unit='s').dt.tz_localize('UTC')
         influx_pdf = influx_pdf.drop(columns=['rx_time'])
-    else:
-        # use DB time
-        influx_pdf['time'] = influx_pdf['_time']
-
-    influx_pdf = influx_pdf.drop(columns=['_time'])
 
     if 'device_addr' not in influx_pdf.columns:
         influx_pdf['device_addr'] = 'NA'
@@ -152,68 +135,51 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
 
 
 def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
+    ic('Get Downlinks V3')
     source = InfluxSource.objects.get(pk=source_id)
 
     influx_org = source.influx_org
     influx_bucket = source.dbname
     influx_token = source.influx_token
     influx_url = f'https://{source.host}'
+
     start_string = start.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_string = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     influx_query = f"""
-        from(bucket: "{influx_bucket}")
-        |> range(start: {start_string}, stop: {end_string})
-        |> filter(fn:(r) => r._measurement == "{dlmeas}" and r.dev_eui == "{dev_eui}")
-        |> drop(fn: (column) => column =~ /^_(start|stop|measurement)/)
-        |> pivot(rowKey:["dev_eui","_time"], columnKey: ["_field"], valueColumn: "_value")
-        """
-    # |> keep(columns: ["_time","dev_eui","gateway","gateway_eui",
-    #     "rx_time","rcv_time","device_addr","counter_up",
-    #     "duplicate","frame_size","payload_size",
-    #     "bandwidth","datarate","spreading_factor",
-    #     "rssi","snr","frequency",
-    #     "gw_latitude","gw_longitude",
-    #     "message_type","tag1","tag2","pluscode", "helium"])
+        SELECT *
+        FROM "{ dlmeas }"
+        WHERE
+            dev_eui = '{ dev_eui }'
+            AND time >= '{ start_string }'
+            AND time <= '{ end_string }'
+    """
+    # ic(influx_query)
 
     # start_timer = perf_counter()
-
-    with InfluxDBClient(url=influx_url, token=influx_token, org=influx_org) as client:
-        influx_pdf = client.query_api().query_data_frame(org=influx_org, query=influx_query)
+    with InfluxDBClient3(token=influx_token,
+                         host=influx_url,
+                         org=influx_org,
+                         database=influx_bucket) as client:
+        reader = client.query(query=influx_query, language="influxql")
     # stop_timer = perf_counter()
     # query_time = round(stop_timer - start_timer, 1)
     # ic(query_time)
-
-    # this normalizes a list of DF into a single DF by adding missing columns and appending
-    if type(influx_pdf) is list:
-        append_flag = False
-        df_list = influx_pdf
-        columns_set = set([col for df in df_list for col in df.columns])
-
-        frames_df = pd.DataFrame()
-        for df in df_list:
-            missing_cols = columns_set - set(df.columns)
-            df = df.reindex(columns=df.columns.tolist() + list(missing_cols))
-            if append_flag:
-                frames_df = pd.concat([frames_df, df], axis=0)
-            else:
-                frames_df = df
-                append_flag = True
-        influx_pdf = frames_df.reset_index(drop=True)
+    influx_pdf = reader.to_pandas()
 
     if influx_pdf.empty:
         raise ValueError(F"No Downlinks - Measurement: {dlmeas}")
 
-    # try/catch error
-    try:
-        influx_pdf = influx_pdf.drop(columns=['result', 'table'])
-    except influx_pdf.DoesNotExist:
-        raise ValueError(F"No Result/Table: {dlmeas}")
+    influx_pdf = influx_pdf.dropna(axis=1, how='all')
+    influx_pdf = influx_pdf.drop(columns=['dev_eui'])
 
-    influx_pdf = influx_pdf.rename(columns={'packet_time': 'time'})
+    if 'packet_time' in influx_pdf.columns:
+        influx_pdf = influx_pdf.drop(columns=['time'])
+        influx_pdf = influx_pdf.rename(columns={'packet_time': 'time'})
+
     influx_pdf['time'] = influx_pdf['time'].apply(lambda t: tstamp2time(str(t)))
-    influx_pdf['tx_time'] = influx_pdf['tx_time'].apply(lambda t: tstamp2time(str(t)))
 
-    influx_pdf = influx_pdf.drop(columns=['_time', 'dev_eui'])
+    influx_pdf['tx_time'] = influx_pdf['tx_time'].apply(lambda t: tstamp2time(str(t)))
 
     # take a copy sorted by time
     # now on 'time'
@@ -259,7 +225,7 @@ def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
         frames_df = frames_df.astype({
             'port': 'category'
         })
-    # ic(frames_df.info())
+    ic(frames_df.info())
     # this re-orders, and filters column names
     downlink_cols = [
         'time', 'tx_time', 'counter_down', 'gateway', 'confirmed', 'ack',
@@ -285,4 +251,5 @@ def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
 
     frames_df = frames_df.reset_index(drop=True)
 
+    ic(frames_df.info())
     return frames_df

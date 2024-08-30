@@ -14,7 +14,7 @@ from ..models import EndNode
 from ..getDeviceData import getDeviceFrames, getDownlinks
 from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
 
-# from icecream import ic
+from icecream import ic
 from time import perf_counter
 
 import matplotlib.pyplot as plt
@@ -333,12 +333,13 @@ def packgraph(request, deveui='', **kwargs):
             downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
             downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
             downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
-            context['downlinks_df'] = downlinks_df
+
+            context['downlinks_df'] = downlinks_df.copy()
 
         except ValueError as err:
             console_messages.append(F'{err}')
             downlinks_df = pd.DataFrame()
-            context['downlinks_df'] = downlinks_df
+            context['downlinks_df'] = downlinks_df.copy()
 
     else:
         context['downlinks_df'] = pd.DataFrame()
