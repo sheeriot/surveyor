@@ -6,29 +6,26 @@ from django.utils import timezone
 import dateutil.parser
 import dateutil.tz
 
-from surveyor.settings import TIME_ZONE
-from ..form_endnode import endNodeSelect
-from accounts.models import Person
-from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
-from ..models import EndNode
-from ..getDeviceData import getDeviceFrames, getDownlinks
-from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
-
-# from icecream import ic
 from time import perf_counter
-
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib as mpl
 import pandas as pd
 
-# =================
-# packGraph View - Parse the Input Data First
-# =================
+from surveyor.settings import TIME_ZONE
+from surveyor.utils import graphSetUp, getGraph, init_datetime_daysago
+
+from ..models import InfluxSource, BucketDevice
+from ..forms import bucketDeviceForm
+from ..getDeviceData import getDeviceFrames, getDownlinks
+from ..deviceFramesFun import device_summ_frames, getDeviceFreqs
+from accounts.models import Person
+
+from icecream import ic
 
 
 @login_required
-def packgraph(request, deveui='', **kwargs):
+def bucketdevice(request, **kwargs):
     username = request.user
     person = Person.objects.get(username=username)
     orgs_list = person.orgs_list()
@@ -46,19 +43,16 @@ def packgraph(request, deveui='', **kwargs):
     console_messages.append(F'Local Timezone: {tz}')
 
     if request.method == 'GET' and 'submit' in request.GET:
-        form = endNodeSelect(request.GET, orgs_list=orgs_list)
+        form = bucketDeviceForm(request.GET, orgs_list=orgs_list)
         if form.is_valid():
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
             end = form.cleaned_data["end"]
             end_zulu = end.astimezone(zulu_tz)
-            endnode = form.cleaned_data["endnode"]
-            endnode_id = endnode.id
-            dev_eui = endnode.dev_eui.lower()
-            source = endnode.influx_source
+            source = form.cleaned_data["source"]
             source_id = source.id
-            meas = endnode.influx_measurement
-
+            meas = form.cleaned_data["meas"]
+            dev_eui = form.cleaned_data["dev_eui"]
         else:
             # form validation failed. Provide messages
             console_messages.append(F'Form Invalid: {form.errors}')
@@ -71,15 +65,10 @@ def packgraph(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
             }
-            return render(request, 'device/packgraph.html', context)
+            return render(request, 'device/bucketdevice.html', context)
 
-    # got some kwargs from URL, but no submit button, process them
     elif request.method == 'GET' and kwargs:
         start_default, end_default = init_datetime_daysago(tz, 3)
-
-        if 'endnode_id' in kwargs:
-            endnode_id = kwargs.pop('endnode_id')
-            endnode = EndNode.objects.get(pk=endnode_id)
 
         if 'start_mark' in kwargs:
             start_mark = kwargs.pop('start_mark')
@@ -95,24 +84,34 @@ def packgraph(request, deveui='', **kwargs):
         else:
             end = end_default
 
-        form = endNodeSelect({
-            'endnode': endnode_id,
-            'start': start,
-            'end': end},
+        if 'source_id' in kwargs:
+            source_id = kwargs.pop('source_id')
+            source = InfluxSource.objects.get(pk=source_id)
+
+        if 'meas' in kwargs:
+            meas = kwargs.pop('meas')
+
+        if 'dev_eui' in kwargs:
+            dev_eui = kwargs.pop('dev_eui')
+
+        form = bucketDeviceForm(
+            {
+             'dev_eui': dev_eui,
+             'source': source,
+             'meas': meas,
+             'start': start,
+             'end': end,
+            },
             orgs_list=orgs_list
         )
-
         if form.is_valid():
+            dev_eui = form.cleaned_data["dev_eui"]
+            source = form.cleaned_data["source"]
+            meas = form.cleaned_data["meas"]
             start = form.cleaned_data["start"]
             start_zulu = start.astimezone(zulu_tz)
             end = form.cleaned_data["end"]
             end_zulu = end.astimezone(zulu_tz)
-            endnode_id = form.cleaned_data["endnode"].id
-            endnode = EndNode.objects.get(pk=endnode_id)
-            dev_eui = endnode.dev_eui.lower()
-            source = endnode.influx_source
-            source_id = source.id
-            meas = endnode.influx_measurement
         else:
             # form validation failed. Provide messages
             console_messages.append(F'Form Invalid: {form.errors}')
@@ -125,41 +124,54 @@ def packgraph(request, deveui='', **kwargs):
                 'results_display': False,
                 'error_message': form.errors
                 }
-            return render(request, 'device/packgraph.html', context)
+            return render(request, 'device/bucketdevice.html', context)
 
     elif request.method == 'GET':
 
-        start_default, end_default = init_datetime_daysago(tz, 3)
-        form = endNodeSelect(
+        yesterday_morning, now = init_datetime_daysago(tz, 1)
+        form = bucketDeviceForm(
             initial={
-                'start': start_default,
-                'end': end_default},
+                'start': yesterday_morning,
+                'end': now},
             orgs_list=orgs_list
         )
         context = {
-            'form': form,
-            'console_messages': console_messages,
-            'results_display': False,
+                'form': form,
+                'console_messages': console_messages,
+                'results_display': False,
         }
-        return render(request, 'device/packgraph.html', context)
+        return render(request, 'device/bucketdevice.html', context)
 
     # ------ being here means we have a valid form ------
-    start_mark = start_zulu.strftime('%Y%m%dT%H%MZ')
-    end_mark = end_zulu.strftime('%Y%m%dT%H%MZ')
+    start_mark = start.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
+    end_mark = end.astimezone(zulu_tz).strftime('%Y%m%dT%H%MZ')
+
+    # get bucket_device with influx_source_id and devEUI
+    bucket_device = BucketDevice.objects.filter(influx_source_id=source_id, dev_eui=dev_eui).first()
+
+    if bucket_device is not None:
+        report_group = bucket_device.report_group
+        if report_group == '':
+            report_group = 'None'
+    else:
+        report_group = 'None'
+
+    # ic(report_group)
 
     context = {
+        'goodrequest': True,
         'form': form,
         'start': start,
         'start_mark': start_mark,
         'end': end,
         'end_mark': end_mark,
         'dev_eui': dev_eui,
-        'endnode': endnode,
-        'source': source,
-        'source_id': source_id,
+        'source_id': source.id,
         'source_name': source.name,
+        'report_group': report_group,
         'meas': meas,
     }
+
     # get the channel plan setup
     cp = source.channel_plan
 
@@ -176,6 +188,7 @@ def packgraph(request, deveui='', **kwargs):
         channelplan_name = cp.name
         context['channelplan'] = channelplan_name
 
+    # It is Query Time!
     start_timer = perf_counter()
     try:
         frames_df = getDeviceFrames(source_id, meas, dev_eui, start_zulu, end_zulu)
@@ -185,7 +198,7 @@ def packgraph(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'device/packgraph.html', context)
+        return render(request, 'device/bucketdevice.html', context)
 
     stop_timer = perf_counter()
     query_time = round(stop_timer - start_timer, 1)
@@ -197,15 +210,31 @@ def packgraph(request, deveui='', **kwargs):
         context['results_display'] = False
         context['error_message'] = error_message
         context['console_messages'] = console_messages
-        return render(request, 'device/packgraph.html', context)
+        return render(request, 'device/bucketdevice.html', context)
+
+    # time are UTC
 
     context['results_display'] = True
     context['frames_received'] = frames_df.shape[0]
     context['frames_first'] = frames_df['time'].min()
     context['frames_last'] = frames_df['time'].max()
-    # ic(frames_df.info())
 
-    # summarize the frames into device_uplinks_df
+    # Now the Gateways
+    context['gateway_count'] = frames_df.gateway.nunique()
+    if 'gw_latitude' in frames_df.columns and 'gw_longitude' in frames_df.columns:
+        gw_loc_df = frames_df[['gateway', 'gw_latitude', 'gw_longitude']].dropna().drop_duplicates(subset=['gateway'])
+        gw_loc_df = gw_loc_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
+        gw_loc_df = gw_loc_df.set_index('gateway')
+        # these columns no longer needed
+        # frames_df = frames_df.rename(columns=['gw_latitude': 'gw_lat, 'gw_longitude': 'gw_long'])
+        # gw_loc_df.to_csv(f'{path_out}/{env_name}_gw_locs_{runstamp}.csv')
+    else:
+        console_messages.append('No gateway locations found')
+        gw_loc_df = pd.DataFrame()
+
+    context['gateway_loc_df'] = gw_loc_df
+
+    # get the frames summarized into two tables
     frames_df, device_uplinks_df = device_summ_frames(frames_df)
 
     # Device Frequency Counts
@@ -217,39 +246,24 @@ def packgraph(request, deveui='', **kwargs):
         device_freqs_in_df['count'] = device_freqs_in_df['count'].astype(int)
 
         context['device_freqs_in_df'] = device_freqs_in_df.T
+    else:
+        context['device_freqs_in_df'] = pd.DataFrame()
+
     # out of channel plan
     device_freqs_out_df = device_freqs_df[~device_freqs_df['freq'].isin(cp_freqs)]
 
     context['device_freqs_out_df'] = device_freqs_out_df.T
 
-    # Now the Gateways
-    context['gateway_count'] = frames_df.gateway.nunique()
-    if 'gw_latitude' in frames_df.columns and 'gw_longitude' in frames_df.columns:
-        gw_loc_df = frames_df[['gateway', 'gw_latitude', 'gw_longitude']].dropna().drop_duplicates(subset=['gateway'])
-        gw_loc_df = gw_loc_df.rename(columns={'gw_latitude': 'lat', 'gw_longitude': 'long'})
-        gw_loc_df = gw_loc_df.set_index('gateway')
-        # gw_loc_df.to_csv(f'{path_out}/{env_name}_gw_locs_{runstamp}.csv')
-    else:
-        console_messages.append('No gateway locations found')
-        gw_loc_df = pd.DataFrame()
-    context['gateway_loc_df'] = gw_loc_df
-
-    # Localize the time for views and pass on frames an uplinks dataframes
-    frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
+    # back to frames
+    # frames_df['time'] = frames_df['time'].dt.tz_convert(local_tz)
+    # ic(frames_df.info())
     frames_out_df = frames_df.copy()
-    if 'gw_lat' and 'gw_long' in frames_out_df.columns:
+    if 'gw_lat' and 'gw_long' in frames_df.columns:
         frames_out_df[['gw_lat', 'gw_long']] = frames_out_df[['gw_lat', 'gw_long']].fillna('')
-
     context['frames_df'] = frames_out_df
 
     device_uplinks_df['time'] = device_uplinks_df['time'].dt.tz_convert(local_tz)
-
-    device_uplinks_out_df = device_uplinks_df.copy().drop(columns=['tgap'])
-
-    device_uplinks_out_df = device_uplinks_out_df.rename(columns={'tgapf': 'tgap'})
-    # ic(device_uplinks_out_df.info())
-
-    context['device_uplinks_df'] = device_uplinks_out_df
+    context['device_uplinks_df'] = device_uplinks_df
 
     # === Create Summary Data
     context['uplinks_received'] = device_uplinks_df.shape[0]
@@ -276,15 +290,19 @@ def packgraph(request, deveui='', **kwargs):
     ax2 = ax1.twinx()
     ax1.set_zorder(ax2.get_zorder()+1)
     ax1.patch.set_visible(False)
+
     fig.patch.set_facecolor('#ECECEC')
     ax1.set_facecolor('#ECECEC')
 
-    fig.suptitle(f"{endnode.name}\nDevEUI: {endnode.dev_eui}", fontsize=14, fontweight='bold')
+    # diff
+    fig.suptitle(f"DevEUI:{dev_eui}", fontsize=18, fontweight='bold')
     ax1.set_title(f"RF Uplink Performance: {start.strftime('%Y-%m-%d %H:%M')} to {end.strftime('%Y-%m-%d %H:%M')}")
+
     ax1.set_ylabel("SNR/Misses")
-    ax1.set_xlabel("Time")
+    ax1.set_xlabel("RX Time")
     ax2.set_ylabel("RSSI")
 
+    # time ticks
     myFmt = mdates.HourLocator('%H')
     myFmt = mdates.AutoDateFormatter(myFmt)
     ax1.xaxis.set_major_formatter(myFmt)
@@ -292,17 +310,16 @@ def packgraph(request, deveui='', **kwargs):
 
     # add text
     ax2.text(
-        0.5, 0.1,
-        F'Uplinks Received: {context["uplinks_received"]}, '
-        F'Missed: {context["uplinks_missed"]}, '
-        F'Delivery Ratio ({round(context["uplinks_pdr"]*100,1)}%)',
-        verticalalignment='center',
-        horizontalalignment='center',
-        transform=ax1.transAxes,
-        color='darkred',
-        alpha=0.9,
-        fontsize=10,
-        bbox=dict(facecolor='cornsilk', edgecolor='black', pad=5.0),
+            0.5, 0.1,
+            F'Uplinks Received: {context["uplinks_received"]}, Missed: {context["uplinks_missed"]}, \
+              Success Rate ({round(context["uplinks_pdr"]*100 ,1)}%)',
+            verticalalignment='center',
+            horizontalalignment='center',
+            transform=ax1.transAxes,
+            color='darkred',
+            alpha=0.9,
+            fontsize=10,
+            bbox=dict(facecolor='cornsilk', edgecolor='black', pad=5.0),
     )
     # X axis limits
     ax1.set_xlim(context['start'], context['end'])
@@ -327,13 +344,14 @@ def packgraph(request, deveui='', **kwargs):
         helium = False
 
     # Now Downlinks
-    if endnode.downlinks is True:
-        dlmeas = endnode.influx_measurement_downlinks
+    if source.downlinks is True:
+        dlmeas = source.influx_measurement_downlinks
         try:
-            downlinks_df = getDownlinks(source_id, dlmeas, dev_eui, start_zulu, end_zulu)
+            downlinks_df = getDownlinks(source.id, dlmeas, dev_eui, start_zulu, end_zulu)
             downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
             downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
 
+            ic(downlinks_df.info())
             context['downlinks_df'] = downlinks_df.copy()
 
         except ValueError as err:
@@ -343,6 +361,7 @@ def packgraph(request, deveui='', **kwargs):
 
     else:
         context['downlinks_df'] = pd.DataFrame()
+
 
     # plotting snr
     l2 = ax1.scatter(frames_df['time'], frames_df['snr'],
@@ -388,7 +407,7 @@ def packgraph(request, deveui='', **kwargs):
         legend_lines = legend_lines + (l4,)
         legend_text = legend_text + ('Join',)
 
-    if endnode.downlinks and not downlinks_df.empty:
+    if source.downlinks and not downlinks_df.empty:
         downlinks_df['mark'] = 15
         l7 = ax1.scatter(downlinks_df['time'], downlinks_df['mark'],
                          marker='1', c='darkviolet', s=40, clip_on=False)
@@ -405,6 +424,7 @@ def packgraph(request, deveui='', **kwargs):
     ax2.spines['left'].set_visible(False)
     ax2.spines['bottom'].set_visible(True)
 
+    # remove ticks
     ax1.tick_params(left=False)
     ax2.tick_params(right=False)
     ax1.tick_params(bottom=False)
@@ -455,6 +475,9 @@ def packgraph(request, deveui='', **kwargs):
         context["graph_freqs_out"] = graph_freqs_out
         plt.close()
 
+    # downlinks coming. Empty dataframe for now
+    # context['downlinks_df'] = pd.DataFrame()
+
     context['console_messages'] = console_messages
 
-    return render(request, 'device/packgraph.html', context)
+    return render(request, 'device/bucketdevice.html', context)

@@ -6,11 +6,13 @@ import json
 from time import perf_counter
 import pandas as pd
 
-from device.models import BucketDevice
+from device.models import BucketDevice, InfluxSource
 from device.locate import pluscode2latlon
 
 from .getBucketData import getBucketData
+from .getBucketDataV3 import getBucketDownlinksV3
 from surveyor.utils import geoDistance
+import dateutil.tz
 
 from icecream import ic
 
@@ -23,6 +25,9 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     else:
         report_group = 'None'
 
+    zulu_tz = dateutil.tz.gettz('UTC')
+
+    influx_source = InfluxSource.objects.get(pk=source_id)
     start_time = perf_counter()
     report_status, frames_df = getBucketData(source_id, meas, start_mark, end_mark, report_group)
     end_time = perf_counter()
@@ -74,8 +79,6 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     # add the dev_eui to the head of tag_cols
     tag_cols.insert(0, 'dev_eui')
 
-    # ic(frames_df.info())
-    
     # copy out the tags subset
     device_tags_df = frames_df[tag_cols].copy().drop_duplicates(subset=['dev_eui']).set_index('dev_eui')
     device_uplink_list = frames_df.groupby(["dev_eui", "device_addr", "counter_up"], as_index=False).agg(
@@ -175,7 +178,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     else:
         if report_group == 'None':
             device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(
-                influx_source=source_id).values()))
+                influx_source=source_id
+                ).values()))
         else:
             device_loc_df = pd.DataFrame(list(BucketDevice.objects.filter(
                 influx_source=source_id, report_group=report_group).values()))
@@ -206,6 +210,24 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         device_gw_df['dist_km'] = device_gw_df.apply(lambda x: geoDistance(x['lat'], x['long'],
                                                                            x['gw_lat'], x['gw_long']),
                                                      axis=1)
+    
+    # Now Downlinks
+    if influx_source.influx_v3:
+        if influx_source.downlinks is True:
+            dlmeas = influx_source.influx_measurement_downlinks
+            try:
+                device_downlinks_df = getBucketDownlinksV3(source_id, dlmeas, start_mark, end_mark, report_group)
+                device_downlinks_df['time'] = device_downlinks_df['time'].dt.tz_convert(zulu_tz)
+                device_downlinks_df['tx_time'] = device_downlinks_df['tx_time'].dt.tz_convert(zulu_tz)
+            except ValueError as err:
+                ic(F'{err}')
+                device_downlinks_df = pd.DataFrame()
+
+    # add downlinks count to the uplinks table for redis
+    if 'device_downlinks_df' in locals() and not device_downlinks_df.empty:
+        downlinks_count = device_downlinks_df.groupby('dev_eui').size().to_frame('downlinks')
+        device_uplinks_df = device_uplinks_df.merge(downlinks_count, on='dev_eui', how='left')
+        device_uplinks_df['downlinks'] = device_uplinks_df['downlinks'].fillna(0).astype(int)
 
     # optimize columns ordering for default presentation
     device_uplinks_cols = [
@@ -217,6 +239,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         'uplinks_missed',
         'uplinks_received',
         'frames_received',
+        'downlinks',
         'sf_avg',
         'sf_7',
         'sf_8',
@@ -262,7 +285,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     device_gw_cols = [col for col in device_gw_cols if col in device_gw_df.columns]
     device_gw_df = device_gw_df[device_gw_cols]
 
-    # create the Totals to Redis
+    # create the Totals dictionary to save to Redis cache
     totals_dict = {}
 
     totals_dict['device_count'] = device_uplinks_df.shape[0]
@@ -277,6 +300,7 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     totals_dict['device_uplinks_memsize'] = int(device_uplinks_df.memory_usage(deep=True).sum())
     totals_dict['device_gw_memsize'] = int(device_gw_df.memory_usage(deep=True).sum())
     totals_dict['query_time'] = query_time
+    totals_dict['downlinks_total'] = int(device_uplinks_df['downlinks'].sum())
 
     # Connect to Redis
     redis_client = redis.Redis(host='redis', port=6379, db=0)
@@ -287,6 +311,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     redis_client.setex(f'{task_id}:device_loc_df', 3600, device_loc_df.to_json())
     redis_client.setex(f'{task_id}:device_uplinks_df', 3600, device_uplinks_df.to_json())
     redis_client.setex(f'{task_id}:device_gw_df', 3600, device_gw_df.to_json())
+    if 'device_downlinks_df' in locals() and not device_downlinks_df.empty:
+        redis_client.setex(f'{task_id}:device_downlinks_df', 3600, device_downlinks_df.to_json())
 
     status = "Success"
     return (status, totals_dict)

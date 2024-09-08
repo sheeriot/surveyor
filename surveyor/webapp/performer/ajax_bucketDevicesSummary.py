@@ -79,6 +79,10 @@ def bucketDevicesSummary(request):
             'totals_dict': totals_dict,
             'device_counts': device_counts
         }
+        
+        if 'downlinks_total' in totals_dict:
+            context['downlinks'] = True
+
         rendered = render_to_string('performer/bucketDevicesSummary.html', context)
         return HttpResponse(rendered)
 

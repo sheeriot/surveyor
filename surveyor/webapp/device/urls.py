@@ -1,5 +1,6 @@
 from django.urls import path
-from .views.views import addEndNode, bucketdevice
+from .views.views import addEndNode
+from .views.bucketdevice import bucketdevice
 from .views.packgraph import packgraph
 
 urlpatterns = [

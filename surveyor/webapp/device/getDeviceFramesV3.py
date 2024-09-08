@@ -5,7 +5,7 @@ from .models import InfluxSource
 from .deviceFramesFun import tstamp2time
 
 # from time import perf_counter
-from icecream import ic
+# from icecream import ic
 
 
 def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
@@ -121,7 +121,7 @@ def getDeviceFramesV3(source_id, meas, dev_eui, start, end):
     # Change the DataRate to Integer
     if 'datarate' in frames_df.columns:
         frames_df = frames_df.astype({
-            'datarate': 'int'
+            'datarate': 'Int64'
         })
         # Then convert to category
         frames_df = frames_df.astype({
@@ -211,7 +211,7 @@ def getDownlinksV3(source_id, dlmeas, dev_eui, start, end):
     # Change the DataRate to Integers, then a category
     if 'datarate' in frames_df.columns:
         frames_df = frames_df.astype({
-            'datarate': 'int'
+            'datarate': 'Int64'
         })
         # Then convert to category
         frames_df = frames_df.astype({
