@@ -200,6 +200,44 @@
   </table>
 </div>
 
+
+<hr>
+<h4 id="device-downlinks-section">Device Downlinks</h4>
+{% if downlinks_df.empty %}
+  <p>- No Downlinks</p>
+{% else %}
+<p>
+  <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#device-downlinks" aria-expanded="false" aria-controls="device-downlinks">
+   Device Downlinks <i class="bi bi-arrows-expand"></i>
+  </button>
+</p>
+<div class="collapse" id="device-downlinks">
+  <div class="row row-cols-auto">
+    <div class="col">
+      <a class="btn btn-rounded btn-success btn-sm" href="#">
+        <i class="bi bi-arrow-90deg-up"></i> Top
+      </a>
+    </div>
+    <div class="col">
+      <button type="button" class="btn btn-rounded btn-info btn-sm" onclick="download_table_as_csv('device-downlinks-results');">
+        <i class="bi bi-file-spreadsheet"></i> Download CSV
+      </button>
+    </div>
+  </div>
+
+  <table id="device-downlinks-results" class="table caption-top table-bordered dt-responsive nowrap w-100">
+    <caption>Downlink Frames - {{ endnode.dev_eui }}</caption>
+    <thead>
+      {{ downlinks_df | convert_data_frame_to_html_table_headers | safe}}
+    </thead>
+    <tbody>
+      {{ downlinks_df | convert_data_frame_to_html_table_rows | safe}}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+
 {% endif %}
 
 

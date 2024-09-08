@@ -29,13 +29,18 @@
     <th>Device Count</th>
     <th>Uplinks Received</th>
     <th>Rejoiners Count</th>
-
+    {% if downlinks %}
+      <th>Downlinks Total</th>
+    {% endif %}
   </tr>
   <tr>
     <td>{{ totals_dict.frame_first|date:"Y-m-d H:i:s (e)" }}</td>
     <td>{{ totals_dict.device_count }}</td>
     <td>{{ totals_dict.uplinks_received }}</td>
     <td>{{ totals_dict.rejoiners }}</td>
+    {% if downlinks %}
+      <td>{{ totals_dict.downlinks_total }}</td>
+    {% endif %}
   </tr>
   <tr>
     <th>Last Frame</th>
