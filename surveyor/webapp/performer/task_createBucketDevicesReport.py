@@ -300,7 +300,8 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
     totals_dict['device_uplinks_memsize'] = int(device_uplinks_df.memory_usage(deep=True).sum())
     totals_dict['device_gw_memsize'] = int(device_gw_df.memory_usage(deep=True).sum())
     totals_dict['query_time'] = query_time
-    totals_dict['downlinks_total'] = int(device_uplinks_df['downlinks'].sum())
+    if 'device_downlinks_df' in locals() and not device_downlinks_df.empty:
+        totals_dict['downlinks_total'] = int(device_uplinks_df['downlinks'].sum())
 
     # Connect to Redis
     redis_client = redis.Redis(host='redis', port=6379, db=0)
