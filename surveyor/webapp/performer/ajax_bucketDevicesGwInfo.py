@@ -14,7 +14,7 @@ from celery.result import AsyncResult
 from device.models import InfluxSource
 from surveyor.utils import getGraph
 
-# from icecream import ic
+from icecream import ic
 
 
 @login_required
@@ -89,10 +89,12 @@ def bucketDevicesGwInfo(request):
     total_freqs.name = 'count'
     total_freqs.index.name = 'freq'
     total_freqs = total_freqs.to_frame()
+    total_freqs['count'] = total_freqs['count'].astype(int)
 
     if channelplan:
         freqs_in_df = total_freqs[total_freqs.index.isin(cp_freqs)]
         freqs_in_df = cp_freqs_df.merge(freqs_in_df, on='freq', how='outer').fillna(0)
+        freqs_in_df['count'] = freqs_in_df['count'].astype(int)
 
     # out of channel plan
     freqs_out_df = total_freqs[~total_freqs.index.isin(cp_freqs)].reset_index()
@@ -155,7 +157,7 @@ def bucketDevicesGwInfo(request):
 
     if channelplan:
         freqs_in_df = freqs_in_df.set_index('freq')
-
+        # ic(freqs_in_df.info())
         plt.figure(figsize=(10, 2))
         freqs_in_df.plot.bar(width=0.9, color='green')
         plt.title("In-Channel Plan - Received by Frequency")
@@ -193,7 +195,7 @@ def bucketDevicesGwInfo(request):
     # put all gateway graphs on same Y limit
 
     max_count = gw_freqs_df.drop(['gateway', 'frames'], axis=1).max().max()
-    max_yaxis = (max_count * 1.05).astype('int')
+    max_yaxis = (max_count * 1.05).astype(int)
 
     # Create a bar chart for each gateway in gw_freqs_df
     # create a subset for display instead of full index of gateways

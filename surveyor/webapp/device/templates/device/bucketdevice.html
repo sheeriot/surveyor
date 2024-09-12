@@ -60,18 +60,24 @@
 </ul>
 <hr>
 <h4 id="summary-tables">Summary Tables</h4>
-<table class="table table-bordered table-light text-center">
+<table class="table table-striped table-bordered w-auto">
     <tr>
         <th>First Frame</th>
         <th>Frames Received</th>
         <th>Uplinks Received</th>
         <th>Uplinks Missed</th>
+        {% if downlinks_total %}
+          <th>Downlinks</th>
+        {% endif %}
     </tr>
     <tr>
         <td>{{ frames_first|date:"Y-m-d H:i (e)" }}</td>
         <td>{{ frames_received }}</td>
         <td>{{ uplinks_received }}</td>
         <td>{{ uplinks_missed }}</td>
+        {% if downlinks_total %}
+          <td>{{ downlinks_total }}</td>
+        {% endif %}
     </tr>
     <tr>
         <th>Last Frame</th>

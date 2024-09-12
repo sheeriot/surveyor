@@ -7,7 +7,7 @@ from influxdb_client_3 import InfluxDBClient3
 from device.models import InfluxSource, BucketDevice
 from device.deviceFramesFun import tstamp2time
 
-from icecream import ic
+# from icecream import ic
 # from time import perf_counter
 
 
@@ -29,39 +29,24 @@ def getBucketDataV3(source_id, meas, start_mark, end_mark, report_group):
 
     if report_group == 'None':
         influx_query = f"""
-            SELECT time, rx_time, counter_up,  dev_eui, device_addr, gateway, duplicate, frame_size,
-            frequency, bandwidth, spreading_factor, datarate, rssi, snr,
-            gw_latitude, gw_longitude
+            SELECT *
             FROM "{ meas }"
             WHERE
                 time >= '{ start_string }'
                 AND time <= '{ end_string }'
             """
-
     else:
         bucket_devices = BucketDevice.objects.filter(influx_source=source, report_group=report_group)
         dev_eui_list = [device.dev_eui for device in bucket_devices]
         dev_eui_csv = ','.join([f"'{ dev_eui }'" for dev_eui in dev_eui_list])
-
         influx_query = f"""
-            SELECT time, rx_time, counter_up,  dev_eui, device_addr, gateway, duplicate, frame_size,
-                frequency, bandwidth, spreading_factor, datarate, rssi, snr,
-                gw_latitude, gw_longitude
+            SELECT *
             FROM "{ meas }"
             WHERE
                 dev_eui IN ({ dev_eui_csv })
                 AND time >= '{ start_string }'
                 AND time <= '{ end_string }'
             """
-        # influx_query = """
-        #     SELECT time, rx_time, counter_up,  dev_eui, device_addr, gateway, duplicate, frame_size,
-        #         frequency, bandwidth, spreading_factor, datarate, rssi, snr, gw_latitude, gw_longitude
-        #     FROM "jundiai"
-        #     WHERE
-        #         dev_eui IN ('00ee01000001effa','00ee01000001c037','00ee0100000210ff')
-        #         AND time >= '2024-08-29T04:00:00Z'
-        #         AND time <= '2024-08-30T15:02:00Z'
-        # """
 
     # start_timer = perf_counter()
     with InfluxDBClient3(token=influx_token,
