@@ -351,8 +351,9 @@ def bucketdevice(request, **kwargs):
             downlinks_df['time'] = downlinks_df['time'].dt.tz_convert(local_tz)
             downlinks_df['tx_time'] = downlinks_df['tx_time'].dt.tz_convert(local_tz)
 
-            ic(downlinks_df.info())
+            # ic(downlinks_df.info())
             context['downlinks_df'] = downlinks_df.copy()
+            context['downlinks_total'] = downlinks_df.shape[0]
 
         except ValueError as err:
             console_messages.append(F'{err}')

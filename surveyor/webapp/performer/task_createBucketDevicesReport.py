@@ -249,13 +249,13 @@ def create_bucketDevicesReport(source_id, meas, start_mark, end_mark, **kwargs):
         'sf_12',
         'frame_first',
         'frame_last',
+        'tag1',
+        'tag2',
         'name',
         'lat',
         'long',
         'marker',
         'address',
-        'tag1',
-        'tag2',
         'pluscode'
     ]
     device_uplinks_cols = [col for col in device_uplinks_cols if col in device_uplinks_df.columns]

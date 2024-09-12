@@ -1,19 +1,17 @@
+import dateutil.parser
+import dateutil.tz
+import json
+import pandas as pd
+import redis
+
+from surveyor.settings import TIME_ZONE
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from celery.result import AsyncResult
 
-import dateutil.parser
-import dateutil.tz
-
 # from icecream import ic
-import json
-import pandas as pd
-import redis
-
-from surveyor.settings import TIME_ZONE
-# from device.models import BucketDevice
 
 
 @login_required
@@ -63,10 +61,13 @@ def bucketDevicesDetails(request):
                                                      unit='ms').dt.tz_localize(zulu_tz)
     device_uplinks_df['frame_last'] = device_uplinks_df['frame_last'].dt.tz_convert(local_tz)
 
+    # ic(device_uplinks_df.info())
     # reconstitute the device_locs_df
     device_loc_json = redis_client.get(f'{task_id}:device_loc_df')
     device_loc_dict = json.loads(device_loc_json)
     device_loc_df = pd.DataFrame(device_loc_dict)
+
+    # ic(device_loc_df.info())
 
     devices_seen = list(device_uplinks_df['dev_eui'])
     if device_loc_df.empty:
